@@ -75,7 +75,7 @@
     'Joe Milton III': { py: 198.5, ptd: [1.5, 194, -270], ry: 31.5, atd: 280 },
     'Dak Prescott': { py: 259.5, ptd: [2.5, 134, -180], ry: 9.5, atd: 650 },
     'Patrick Mahomes': { py: 235, ptd: [1.5, -110, -110], ry: 12.5, atd: 669 },
-    'Caleb Williams': { py: 258.5 },
+    'Caleb Williams': { py: 259.5 },
     'Josh Allen': { ry: 36.5 },
     'Saquon Barkley': { ry: 64.5, rec: 1.5, recy: 8.5, atd: 105 },
     'Javonte Williams': { ry: 76.5, rec: 1.5, recy: 7.5, atd: -180 },
@@ -87,7 +87,11 @@
     'Makai Lemon': { rec: 3.5, recy: 29.5, atd: 410 },
     'Ryan Flournoy': { rec: 3.5, recy: 29.5, atd: 280 },
     'Darius Cooper': { rec: 2.5, recy: 26.5 },
-    'Rashee Rice': { recy: 46.5 },
+    'Rashee Rice': { rec: 4.5, recy: 46.5 },
+    'Jameson Williams': { recy: 56.5 },
+    'Luther Burden III': { recy: 67.5 }, // rush + rec yards line
+    'Khalil Shakir': { recy: 39.5 },
+    'Colston Loveland': { recy: 52.5 },
     'DJ Moore': { recy: 51.5 },
     'Dallas Goedert': { rec: 3.5, recy: 30.5, atd: 330 },
     'Brevyn Spann-Ford': { rec: 1.5, recy: 13.5, atd: 360 },
@@ -120,7 +124,8 @@
       if (py == null) return null; // no passing line: keep the model
       pts = py * 0.04 + ptd * 4 - 0.7 * 2 + ry * 0.1 + rtd * 6;
     } else {
-      if (p.pos === 'RB' && q.ry == null && markets < 2) return null;
+      if (q.ry == null && q.recy == null) return null; // a TD price alone isn't enough to project from
+      if (p.pos === 'RB' && q.ry == null) return null;
       const ry = q.ry ?? 0, recy = q.recy ?? 0, rec = q.rec ?? recy / YPC[p.pos];
       const td = q.atd != null ? tdMean(q.atd) : (ry + recy) / 105 * (impliedTeam / 23);
       pts = ry * 0.1 + recy * 0.1 + rec + td * 6;
