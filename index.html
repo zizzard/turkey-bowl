@@ -129,6 +129,9 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 .toggle { border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
 .toggle[aria-pressed="true"] { background: var(--bad); border-color: var(--bad); color: #fff; }
 
+.slot-body { padding: 4px 0 8px; align-items: start; }
+.slot-main { min-width: 0; }
+.slot-foot { padding: 10px 16px 4px; }
 .slotgrid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .chart { padding: 16px; }
 .chart svg { width: 100%; height: auto; display: block; }
@@ -156,16 +159,13 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     <div>
       <div class="eyebrow">Thanksgiving 2026 · PPR · 1 QB · 2 RB · 3 WR · TE · K · D/ST</div>
       <h1>Turkey Bowl Draft Board</h1>
-      <div class="sub">Value-based drafting from season PPR averages, scaled by each team's Vegas implied points. Lines and injuries updated <span id="updated"></span>.</div>
     </div>
   </header>
 
-  <section class="games" id="games" aria-label="Vegas lines"></section>
 
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="draft" aria-selected="true">Live draft</button>
     <button role="tab" data-tab="cheat" aria-selected="false">VBD rankings</button>
-    <button role="tab" data-tab="slot" aria-selected="false">Draft position</button>
   </nav>
 
   <!-- LIVE DRAFT -->
@@ -179,6 +179,17 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         <button class="btn danger" id="resetDraft">Clear all picks</button>
         <span class="muted" style="font-size:12px">Saved in this browser only.</span>
       </div>
+    </div>
+  </details>
+  <details class="panel league" id="slotPanel">
+    <summary><h3>Draft position</h3><span class="muted" id="slotSummary">Which pick projects best</span></summary>
+    <div class="slotgrid slot-body">
+      <div class="slot-main">
+        <div class="chart" id="slotChart"></div>
+        <div class="tbl-wrap"><table class="num"><thead><tr><th>Slot</th><th class="r">Avg lineup pts</th><th class="r">vs. avg</th><th>Usual first pick</th><th class="r">Picks</th></tr></thead><tbody id="slotBody"></tbody></table></div>
+        <div class="slot-foot"><button class="btn" id="rerun">Re-run 2,000 drafts</button></div>
+      </div>
+      <div class="prose" id="slotNotes"></div>
     </div>
   </details>
   <div class="draft">
@@ -221,7 +232,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <h3>How the numbers work</h3>
       <dl class="method">
         <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
-        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Lines are from Fox Sports.</dd>
+        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Lines as of Nov 25.</dd>
         <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
         <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
         <dt>Draft position</dt><dd>2,000 mock drafts where every team picks by live VBD with some randomness, scored by total projected starting points.</dd>
@@ -229,17 +240,6 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     </div>
   </section>
 
-  <!-- DRAFT SLOT -->
-  <section id="tab-slot" hidden>
-    <div class="slotgrid">
-      <div class="panel">
-        <div class="panel-h"><h2>Projected lineup by draft slot</h2><button class="btn" id="rerun">Re-run 2,000 drafts</button></div>
-        <div class="chart" id="slotChart"></div>
-        <div class="tbl-wrap"><table class="num"><thead><tr><th>Slot</th><th class="r">Avg lineup pts</th><th class="r">vs. avg</th><th>Usual first pick</th><th class="r">Picks</th></tr></thead><tbody id="slotBody"></tbody></table></div>
-      </div>
-      <div class="panel prose" id="slotNotes"></div>
-    </div>
-  </section>
 </div>
 
 <script src="engine.js?v=7399c6e2"></script>
@@ -264,17 +264,16 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     const defOut = V.PLAYERS.filter(p => V.DEFAULT_OUT.includes(p.name)).map(p => p.id);
     S.out = [...new Set([...(S.out || []), ...defOut])]; S.dataVersion = V.DATA_VERSION;
   }
-  if (!['draft', 'cheat', 'slot'].includes(S.tab)) S.tab = 'draft';
+  if (!['draft', 'cheat'].includes(S.tab)) S.tab = 'draft';
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
   let P = [];          // projected players
-  let slotResult = null;
+  let slotResult = null, slotRunning = false;
 
   function recompute() { P = V.project(S.lines, S.overrides); }
 
-  // ---------- games ----------
-  $('#updated').textContent = V.LINES_UPDATED;
   function renderGames() {
+    return;
     const imp = V.impliedTotals(S.lines);
     $('#games').innerHTML = S.lines.map((g, i) => `
       <div class="game">
@@ -288,8 +287,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; save(); renderTabs(); });
   function renderTabs() {
     document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
-    ['draft', 'cheat', 'slot'].forEach(t => $('#tab-' + t).hidden = t !== S.tab);
-    if (S.tab === 'slot' && !slotResult) runSlots();
+    ['draft', 'cheat'].forEach(t => $('#tab-' + t).hidden = t !== S.tab);
   }
 
   // ---------- filters ----------
@@ -426,8 +424,9 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 
   // ---------- draft slot ----------
   function runSlots() {
-    $('#slotChart').innerHTML = '<p class="muted">Running mock drafts…</p>';
-    setTimeout(() => { slotResult = V.simulateSlots(P, S.teams, S.out, 2000, 1.5, Math.floor(Math.random() * 1e9)); renderSlots(); }, 30);
+    if (slotRunning) return; slotRunning = true;
+    $('#slotChart').innerHTML = '<p class="muted" style="padding:0 16px">Running mock drafts…</p>';
+    setTimeout(() => { slotResult = V.simulateSlots(P, S.teams, S.out, 2000, 1.5, Math.floor(Math.random() * 1e9)); slotRunning = false; renderSlots(); }, 30);
   }
   $('#rerun').onclick = runSlots;
   function renderSlots() {
@@ -453,6 +452,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     $('#slotBody').innerHTML = [...r].sort((a, b) => b.mean - a.mean).map(x => `<tr ${x === best ? 'class="rec"' : ''}><td><b>Pick ${x.slot}</b></td><td class="r">${fmt(x.mean)}</td><td class="r">${(x.mean - avg >= 0 ? '+' : '') + fmt(x.mean - avg)}</td><td>${x.topFirst} <span class="muted">(${Math.round(x.topFirstPct * 100)}%)</span></td><td class="r muted">${picksFor(x.slot - 1)}</td></tr>`).join('');
 
     const ranked = [...r].sort((a, b) => b.mean - a.mean);
+    $('#slotSummary').textContent = `Pick ${ranked[0].slot} projects best (${fmt(ranked[0].mean)} pts)`;
     const top2 = P.filter(p => !S.out.includes(p.id)).sort((a, b) => b.proj - a.proj).slice(0, 2);
     $('#slotNotes').innerHTML = `
       <h3>Where to sit</h3>
@@ -487,9 +487,10 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 
   function renderAll() {
     renderGames(); renderFilter($('#posFilter'), 'pos'); renderFilter($('#posFilter2'), 'pos2');
-    renderDraft(); renderCheat(); renderSetup(); renderTabs(); if (slotResult) renderSlots();
+    renderDraft(); renderCheat(); renderSetup(); renderTabs(); if (slotResult) renderSlots(); else if ($('#slotPanel').open) runSlots();
   }
-  if (!S.picks.length) $('#league').open = true;
+  if (!S.picks.length) { $('#league').open = true; $('#slotPanel').open = true; }
+  $('#slotPanel').addEventListener('toggle', () => { if ($('#slotPanel').open && !slotResult) runSlots(); });
   recompute(); renderAll();
 })();
 </script>
