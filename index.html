@@ -48,9 +48,18 @@ header.top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; j
 .game .teams .at { color: var(--muted); font-size: 15px; }
 .game .imp { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
 .game .imp b { color: var(--ink); font-size: 15px; }
-.game .edit { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
-.game .edit select, .game .edit input { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
-.game .edit input { width: 58px; }
+.game .line { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+details.league { margin-bottom: 18px; }
+details.league > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 12px 16px; }
+details.league > summary::-webkit-details-marker { display: none; }
+details.league > summary::before { content: "▸"; color: var(--muted); transition: transform .12s; }
+details.league[open] > summary::before { transform: rotate(90deg); }
+details.league[open] > summary { border-bottom: 1px solid var(--line); }
+.league-body { display: grid; grid-template-columns: 140px 220px minmax(0, 1fr); gap: 14px 18px; align-items: start; }
+.league-body .namegrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.league-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.method-wrap { margin-top: 18px; }
+@media (max-width: 760px) { .league-body { grid-template-columns: minmax(0, 1fr); } }
 
 nav.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
 nav.tabs button { background: none; border: 0; padding: 10px 14px; font-family: var(--display); font-size: 17px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
@@ -126,7 +135,6 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 .prose ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .callout { border-left: 3px solid var(--gold); padding: 8px 12px; background: var(--surface-2); border-radius: 0 8px 8px 0; }
 
-.setup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .form { padding: 16px; display: grid; gap: 12px; }
 .form label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .form input, .form select { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 7px 10px; color: var(--ink); font-weight: 500; font-size: 14px; }
@@ -135,7 +143,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 .method dt { font-weight: 700; margin-top: 8px; }
 .method dd { margin: 2px 0 0; color: var(--muted); }
 
-@media (max-width: 980px) { .draft, .slotgrid, .setup { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
+@media (max-width: 980px) { .draft, .slotgrid { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
 @media (max-width: 640px) { .games { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 32px; } .namegrid { grid-template-columns: minmax(0, 1fr); } .hide-sm { display: none; } }
 @media (prefers-reduced-motion: no-preference) { .draftbtn, .chipbtn, .btn { transition: background .12s, color .12s; } }
 </style>
@@ -147,9 +155,8 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     <div>
       <div class="eyebrow">Thanksgiving 2026 · PPR · 1 QB · 2 RB · 3 WR · TE · K · D/ST</div>
       <h1>Turkey Bowl Draft Board</h1>
-      <div class="sub">Value-based drafting from season PPR averages, scaled by each team's Vegas implied points. Edit any line and every projection updates.</div>
+      <div class="sub">Value-based drafting from season PPR averages, scaled by each team's Vegas implied points.</div>
     </div>
-    <div class="btnrow"><button class="btn" id="resetLines">Reset lines</button></div>
   </header>
 
   <section class="games" id="games" aria-label="Vegas lines"></section>
@@ -158,11 +165,23 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     <button role="tab" data-tab="draft" aria-selected="true">Live draft</button>
     <button role="tab" data-tab="cheat" aria-selected="false">VBD rankings</button>
     <button role="tab" data-tab="slot" aria-selected="false">Draft position</button>
-    <button role="tab" data-tab="setup" aria-selected="false">League setup</button>
   </nav>
 
   <!-- LIVE DRAFT -->
-  <section id="tab-draft" class="draft">
+  <section id="tab-draft">
+  <details class="panel league" id="league">
+    <summary><h3>League setup</h3><span class="muted" id="leagueSummary"></span></summary>
+    <div class="form league-body">
+      <label>Teams<select id="teamCount"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
+      <label>Your draft slot<select id="mySlot"></select></label>
+      <div class="namegrid" id="names"></div>
+      <div class="league-foot">
+        <button class="btn danger" id="resetDraft">Clear all picks</button>
+        <span class="muted" style="font-size:12px">Changing the team count clears the draft. Picks and settings are saved in this browser only.</span>
+      </div>
+    </div>
+  </details>
+  <div class="draft">
     <div class="panel">
       <div class="panel-h">
         <h2>Available</h2>
@@ -181,6 +200,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <div class="panel clock" id="clock"></div>
       <div class="panel"><div class="panel-h"><h3>Rosters</h3><span class="muted" id="draftProgress"></span></div><div class="rosters" id="rosters"></div></div>
     </aside>
+  </div>
   </section>
 
   <!-- CHEAT SHEET -->
@@ -197,6 +217,16 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         </table>
       </div>
     </div>
+    <div class="panel form method-wrap">
+      <h3>How the numbers work</h3>
+      <dl class="method">
+        <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
+        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Lines are from Fox Sports.</dd>
+        <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
+        <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
+        <dt>Draft position</dt><dd>2,000 mock drafts where every team picks by live VBD with some randomness, scored by total projected starting points.</dd>
+      </dl>
+    </div>
   </section>
 
   <!-- DRAFT SLOT -->
@@ -208,28 +238,6 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         <div class="tbl-wrap"><table class="num"><thead><tr><th>Slot</th><th class="r">Avg lineup pts</th><th class="r">vs. avg</th><th>Usual first pick</th><th class="r">Picks</th></tr></thead><tbody id="slotBody"></tbody></table></div>
       </div>
       <div class="panel prose" id="slotNotes"></div>
-    </div>
-  </section>
-
-  <!-- SETUP -->
-  <section id="tab-setup" class="setup" hidden>
-    <div class="panel form">
-      <h3>League</h3>
-      <label>Teams<select id="teamCount"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
-      <label>Your draft slot<select id="mySlot"></select></label>
-      <div class="namegrid" id="names"></div>
-      <div class="btnrow"><button class="btn danger" id="resetDraft">Clear all picks</button></div>
-      <p class="muted" style="margin:0;font-size:12px">Changing the team count clears the draft. Picks and settings are saved in this browser only.</p>
-    </div>
-    <div class="panel form">
-      <h3>How the numbers work</h3>
-      <dl class="method">
-        <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
-        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total.</dd>
-        <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
-        <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
-        <dt>Draft position</dt><dd>2,000 mock drafts where every team picks by live VBD with some randomness, scored by total projected starting points.</dd>
-      </dl>
     </div>
   </section>
 </div>
@@ -251,6 +259,8 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   });
   let S = defaults();
   try { const saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) S = Object.assign(S, saved); } catch (e) {}
+  S.lines = JSON.parse(JSON.stringify(V.DEFAULT_LINES));
+  if (!['draft', 'cheat', 'slot'].includes(S.tab)) S.tab = 'draft';
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
   let P = [];          // projected players
@@ -265,26 +275,15 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <div class="game">
         <div class="teams"><span>${V.TEAM_NAMES[g.away]}</span><span class="at">at</span><span>${V.TEAM_NAMES[g.home]}</span></div>
         <div class="imp num"><span>${g.away} <b>${fmt(imp[g.away])}</b></span><span class="muted">${g.time}</span><span><b>${fmt(imp[g.home])}</b> ${g.home}</span></div>
-        <div class="edit">
-          <label>Fav <select data-g="${i}" data-f="fav" aria-label="Favorite"><option ${g.fav === g.away ? 'selected' : ''}>${g.away}</option><option ${g.fav === g.home ? 'selected' : ''}>${g.home}</option></select></label>
-          <label>by <input data-g="${i}" data-f="spread" id="sp${i}" type="number" step="0.5" min="0" value="${g.spread}" aria-label="Spread"></label>
-          <label>O/U <input data-g="${i}" data-f="total" id="tot${i}" type="number" step="0.5" min="20" value="${g.total}" aria-label="Total"></label>
-        </div>
+        <div class="line num">${g.fav} −${g.spread} · O/U ${g.total}</div>
       </div>`).join('');
   }
-  $('#games').addEventListener('change', e => {
-    const t = e.target; if (!t.dataset.f) return;
-    const g = S.lines[+t.dataset.g];
-    g[t.dataset.f] = t.dataset.f === 'fav' ? t.value : parseFloat(t.value) || 0;
-    slotResult = null; save(); recompute(); renderAll();
-  });
-  $('#resetLines').onclick = () => { S.lines = JSON.parse(JSON.stringify(V.DEFAULT_LINES)); slotResult = null; save(); recompute(); renderAll(); };
 
   // ---------- tabs ----------
   document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; save(); renderTabs(); });
   function renderTabs() {
     document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
-    ['draft', 'cheat', 'slot', 'setup'].forEach(t => $('#tab-' + t).hidden = t !== S.tab);
+    ['draft', 'cheat', 'slot'].forEach(t => $('#tab-' + t).hidden = t !== S.tab);
     if (S.tab === 'slot' && !slotResult) runSlots();
   }
 
@@ -470,7 +469,9 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   function renderSetup() {
     $('#teamCount').value = S.teams;
     $('#mySlot').innerHTML = `<option value="-1" ${S.mySlot < 0 ? 'selected' : ''}>Not set yet</option>` + [...Array(S.teams).keys()].map(t => `<option value="${t}" ${t === S.mySlot ? 'selected' : ''}>Pick ${t + 1} · ${S.names[t]}</option>`).join('');
-    $('#names').innerHTML = [...Array(S.teams).keys()].map(t => `<label>Pick ${t + 1}<input id="name${t}" data-name="${t}" value="${S.names[t].replace(/"/g, '&quot;')}"></label>`).join('');
+    if (!document.activeElement || !document.activeElement.dataset.name)
+      $('#names').innerHTML = [...Array(S.teams).keys()].map(t => `<label>Pick ${t + 1}<input id="name${t}" data-name="${t}" value="${S.names[t].replace(/"/g, '&quot;')}"></label>`).join('');
+    $('#leagueSummary').textContent = `${S.teams} teams · ${S.mySlot < 0 ? 'your slot not set' : 'you pick ' + (S.mySlot + 1) + (S.names[S.mySlot] && !/^Team \d+$/.test(S.names[S.mySlot]) ? ' (' + S.names[S.mySlot] + ')' : '')}`;
   }
   $('#teamCount').onchange = e => { S.teams = +e.target.value; S.picks = []; if (S.mySlot >= S.teams) S.mySlot = -1; slotResult = null; save(); renderAll(); };
   $('#mySlot').onchange = e => { S.mySlot = +e.target.value; save(); renderAll(); };
@@ -485,6 +486,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     renderGames(); renderFilter($('#posFilter'), 'pos'); renderFilter($('#posFilter2'), 'pos2');
     renderDraft(); renderCheat(); renderSetup(); renderTabs(); if (slotResult) renderSlots();
   }
+  if (!S.picks.length) $('#league').open = true;
   recompute(); renderAll();
 })();
 </script>
