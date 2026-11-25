@@ -216,7 +216,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     <div class="panel form">
       <h3>League</h3>
       <label>Teams<select id="teamCount"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
-      <label>Highlight this slot as you<select id="mySlot"></select></label>
+      <label>Your draft slot<select id="mySlot"></select></label>
       <div class="namegrid" id="names"></div>
       <div class="btnrow"><button class="btn danger" id="resetDraft">Clear all picks</button></div>
       <p class="muted" style="margin:0;font-size:12px">Changing the team count clears the draft. Picks and settings are saved in this browser only.</p>
@@ -238,12 +238,12 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 <script>
 (function () {
   const V = window.VBD;
-  const KEY = 'turkeybowl-v1';
+  const KEY = 'turkeybowl-v2';
   const $ = s => document.querySelector(s);
   const fmt = (n, d = 1) => (n == null || isNaN(n)) ? '–' : n.toFixed(d);
 
   const defaults = () => ({
-    teams: 6, mySlot: 0,
+    teams: 6, mySlot: -1,
     names: ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8'],
     lines: JSON.parse(JSON.stringify(V.DEFAULT_LINES)),
     out: V.PLAYERS.filter(p => V.DEFAULT_OUT.includes(p.name)).map(p => p.id),
@@ -469,10 +469,10 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   // ---------- setup ----------
   function renderSetup() {
     $('#teamCount').value = S.teams;
-    $('#mySlot').innerHTML = [...Array(S.teams).keys()].map(t => `<option value="${t}" ${t === S.mySlot ? 'selected' : ''}>Pick ${t + 1} · ${S.names[t]}</option>`).join('');
+    $('#mySlot').innerHTML = `<option value="-1" ${S.mySlot < 0 ? 'selected' : ''}>Not set yet</option>` + [...Array(S.teams).keys()].map(t => `<option value="${t}" ${t === S.mySlot ? 'selected' : ''}>Pick ${t + 1} · ${S.names[t]}</option>`).join('');
     $('#names').innerHTML = [...Array(S.teams).keys()].map(t => `<label>Pick ${t + 1}<input id="name${t}" data-name="${t}" value="${S.names[t].replace(/"/g, '&quot;')}"></label>`).join('');
   }
-  $('#teamCount').onchange = e => { S.teams = +e.target.value; S.picks = []; if (S.mySlot >= S.teams) S.mySlot = 0; slotResult = null; save(); renderAll(); };
+  $('#teamCount').onchange = e => { S.teams = +e.target.value; S.picks = []; if (S.mySlot >= S.teams) S.mySlot = -1; slotResult = null; save(); renderAll(); };
   $('#mySlot').onchange = e => { S.mySlot = +e.target.value; save(); renderAll(); };
   $('#names').addEventListener('change', e => { const t = e.target.dataset.name; if (t == null) return; S.names[+t] = e.target.value || `Team ${+t + 1}`; save(); renderAll(); });
   let armed = false;
