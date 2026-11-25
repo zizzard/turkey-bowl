@@ -84,6 +84,8 @@ tr.rec td { background: var(--accent-soft); }
 tr.full td { opacity: .45; }
 tr.out td { opacity: .4; text-decoration: line-through; }
 .pname { font-weight: 600; }
+.src { font-size: 10px; font-weight: 600; letter-spacing: .02em; color: var(--muted); margin-right: 5px; white-space: nowrap; }
+.src.props { color: var(--accent); }
 .note { font-size: 11px; font-weight: 500; color: var(--gold); margin-left: 4px; }
 .pos { display: inline-block; min-width: 38px; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; color: #fff; }
 .pos.QB { background: var(--qb); } .pos.RB { background: var(--rb); } .pos.WR { background: var(--wr); } .pos.TE { background: var(--te); } .pos.K { background: var(--k); } .pos.DST { background: var(--dst); }
@@ -232,6 +234,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <h3>How the numbers work</h3>
       <dl class="method">
         <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
+        <dt>Player props</dt><dd>Where sportsbooks post player lines, the projection comes from them: passing yards × 0.04, passing TDs × 4 (from the TD over/under odds), rushing and receiving yards × 0.1, receptions × 1, and expected TDs × 6 from anytime-TD odds (after removing the book's cut). Prop lines are medians and fantasy scoring skews high, so these get a 10% bump to put them on the same scale as season averages. Players with three or more markets are marked <b>props</b>; with one or two, the number is a mix of props and the season-average model (<b>½ props</b>). Everyone else uses the model below. Props as of Nov 25.</dd>
         <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Kicker and D/ST projections are then pulled halfway to their position average, because their week-to-week scoring is mostly noise. Lines as of Nov 25.</dd>
         <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
         <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
@@ -242,7 +245,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 
 </div>
 
-<script src="engine.js?v=a82bcfb1"></script>
+<script src="engine.js?v=f51e81d6"></script>
 <script>
 (function () {
   const V = window.VBD;
@@ -297,6 +300,8 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   }
 
   const teamName = t => `Team ${t + 1}` + (t === S.mySlot ? ' (you)' : '');
+  const srcTag = p => S.overrides[p.id] != null || p.src === 'model' ? '' :
+    `<span class="src ${p.src}" title="${p.src === 'props' ? 'From Vegas player props' : 'Part Vegas props, part season average'}">${p.src === 'props' ? 'props' : '½ props'}</span>`;
   const matchup = p => `${p.team} ${p.pos === 'DST' ? 'vs' : 'vs'} ${p.opp}`;
 
   // ---------- live draft ----------
@@ -320,7 +325,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         <td><span class="pos ${p.pos}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span></td>
         <td class="pname">${p.name}${p.note ? ` <span class="note">${p.note}</span>` : ''}</td>
         <td class="hide-sm muted">${matchup(p)}</td>
-        <td class="r">${fmt(p.proj)}</td>
+        <td class="r">${srcTag(p)}${fmt(p.proj)}</td>
         <td class="r"><span class="vbdbar ${v != null && v < 0 ? 'neg' : ''}"><i style="width:${w}px"></i>${v == null ? 'filled' : fmt(v)}</span></td>
         <td class="r"><button class="draftbtn" data-id="${p.id}" ${done || full ? 'disabled' : ''} title="${full ? teamName(onClock) + ' has filled ' + p.pos : 'Draft to ' + teamName(onClock)}">Draft</button></td>
       </tr>`;
@@ -404,7 +409,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         <td class="r">${p.ppg == null ? '–' : fmt(p.ppg)}</td>
         <td class="r muted">${p.games || 0}</td>
         <td class="r muted">${fmt(p.implied)}</td>
-        <td class="r"><b>${fmt(p.proj)}</b></td>
+        <td class="r">${srcTag(p)}<b>${fmt(p.proj)}</b></td>
         <td class="r">${out ? '–' : fmt(v)}</td>
         <td class="r"><input class="ovr" id="ovr${p.id}" data-ovr="${p.id}" type="number" step="0.1" placeholder="${fmt(p.proj)}" value="${S.overrides[p.id] ?? ''}" aria-label="Override projection for ${p.name}"></td>
         <td><button class="toggle" data-out="${p.id}" aria-pressed="${out}">${out ? 'Out' : 'Active'}</button></td>
@@ -462,7 +467,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         return rbs.length > 1 ? `<div class="callout">${rbs[0].name} is the clearest edge on the board: about ${fmt(rbs[0].proj - rbs[1].proj)} pts more than the next running back. Whoever picks first should take him.</div>` : ''; })()}
       <h3>Draft notes for this pool</h3>
       <ul>
-        <li><b>Running back is the scarce position.</b> With Walker out, only six backs project in double digits and every team needs two. Take one in round 1 or 2. Emmett Johnson moves into Walker's role and becomes a solid RB2.</li>
+        <li><b>Running back is the scarce position.</b> With Walker out, only seven backs project in double digits and every team needs two. Take one in round 1 or 2. Emmett Johnson moves into Walker&rsquo;s role, and the props have Saquon Barkley as the Eagles&rsquo; lead back, so both are solid RB2s.</li>
         <li><b>Quarterback goes deep.</b> Allen is the best, but Dak, Caleb, Goff and Mahomes all land close together. Waiting a few rounds costs only a few points.</li>
         <li><b>Kickers and D/STs:</b> there are exactly ${S.teams === 6 ? 'six of each, one per team' : 'six of each'}. The top four of each are close to interchangeable, so take one in rounds 6 to 8, before you're left with the last two. The Bills and Bears D/STs are the best options.</li>
         <li><b>Tight end is flat.</b> LaPorta, Kelce, Loveland and Kincaid project within about one point of each other. Let others reach.</li>
@@ -494,5 +499,4 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   recompute(); renderAll();
 })();
 </script>
-</body>
-</html>
+</body></html>

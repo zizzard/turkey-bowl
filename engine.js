@@ -61,10 +61,72 @@
   // Role changes: baseline PPR PPG to use instead of the season average.
   const ROLE_PPG = { 'Emmett Johnson': 15.0 };
   const NOTES = {
-    'Jalen Hurts': 'Out for season', 'Kenneth Walker III': 'Ruled out', 'Cole Kmet': 'Out for season',
-    'Emmett Johnson': 'Lead back with Walker out', 'Noah Gray': 'Questionable',
+    'Jalen Hurts': 'Out for season', 'Kenneth Walker III': 'Out (some reports say he may play)', 'Cole Kmet': 'Out for season',
+    'Emmett Johnson': 'Lead back with Walker out', 'Noah Gray': 'Missed practice (rib)',
+    'Jake Ferguson': 'Missed Tue practice', 'Kyle Monangai': 'Working back from turf toe',
+    'Roschon Johnson': 'Missed practice (ankle)',
   };
   PLAYERS.forEach(p => { if (ROLE_PPG[p.name] != null) p.rolePpg = ROLE_PPG[p.name]; if (NOTES[p.name]) p.note = NOTES[p.name]; });
+
+  // Vegas player props (pulled Nov 25 from published previews; mostly FanDuel/DraftKings/Novig lines).
+  // py/ry/recy = yards O/U, rec = receptions O/U, ptd = [line, overOdds, underOdds], atd = anytime TD American odds.
+  const PROPS_UPDATED = 'Nov 25';
+  const PROPS = {
+    'Joe Milton III': { py: 198.5, ptd: [1.5, 194, -270], ry: 31.5, atd: 280 },
+    'Dak Prescott': { py: 259.5, ptd: [2.5, 134, -180], ry: 9.5, atd: 650 },
+    'Patrick Mahomes': { py: 235, ptd: [1.5, -110, -110], ry: 12.5, atd: 669 },
+    'Caleb Williams': { py: 258.5 },
+    'Josh Allen': { ry: 36.5 },
+    'Saquon Barkley': { ry: 64.5, rec: 1.5, recy: 8.5, atd: 105 },
+    'Javonte Williams': { ry: 76.5, rec: 1.5, recy: 7.5, atd: -180 },
+    'James Cook': { ry: 85.5 },
+    'KaVontae Turpin': { ry: 3.5, rec: 0.5, recy: 4.5 },
+    'CeeDee Lamb': { rec: 7.5, recy: 87.5, atd: -160 },
+    'George Pickens': { rec: 5.5, recy: 68.5, atd: -115 },
+    'DeVonta Smith': { rec: 5.5, recy: 63.5, atd: 200 },
+    'Makai Lemon': { rec: 3.5, recy: 29.5, atd: 410 },
+    'Ryan Flournoy': { rec: 3.5, recy: 29.5, atd: 280 },
+    'Darius Cooper': { rec: 2.5, recy: 26.5 },
+    'Rashee Rice': { recy: 46.5 },
+    'DJ Moore': { recy: 51.5 },
+    'Dallas Goedert': { rec: 3.5, recy: 30.5, atd: 330 },
+    'Brevyn Spann-Ford': { rec: 1.5, recy: 13.5, atd: 360 },
+    'Travis Kelce': { recy: 43.5 },
+  };
+  const YPC = { RB: 7.5, WR: 12.5, TE: 10.5 };
+  // Prop lines are medians; fantasy points skew right, so the mean runs higher. 1.1 lines props up with
+  // the season-average model across starters who have both (median ratio ~0.91).
+  const SKEW = 1.1;
+  const ATD_VIG = 0.9; // anytime-TD "yes" prices carry heavy hold
+  const impP = o => o < 0 ? -o / (-o + 100) : 100 / (o + 100);
+  // Poisson mean whose P(X > line) matches the de-vigged over probability.
+  function poissonMean(line, pOver) {
+    const k = Math.floor(line);
+    const over = l => { let c = 0, t = Math.exp(-l); for (let i = 0; i <= k; i++) { c += t; t *= l / (i + 1); } return 1 - c; };
+    let lo = 0.01, hi = 10;
+    for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; over(m) < pOver ? lo = m : hi = m; }
+    return (lo + hi) / 2;
+  }
+  const tdMean = odds => -Math.log(1 - Math.min(0.95, impP(odds) * ATD_VIG));
+  // Points from props, filling missing markets with simple defaults. Returns { pts, markets } or null.
+  function propPoints(p, impliedTeam) {
+    const q = PROPS[p.name]; if (!q) return null;
+    const markets = ['py', 'ptd', 'ry', 'rec', 'recy', 'atd'].filter(k => q[k] != null).length;
+    let pts;
+    if (p.pos === 'QB') {
+      const py = q.py, ry = q.ry ?? 12;
+      const ptd = q.ptd ? poissonMean(q.ptd[0], impP(q.ptd[1]) / (impP(q.ptd[1]) + impP(q.ptd[2]))) : (py ?? 0) / 150;
+      const rtd = q.atd != null ? tdMean(q.atd) : ry / 90;
+      if (py == null) return null; // no passing line: keep the model
+      pts = py * 0.04 + ptd * 4 - 0.7 * 2 + ry * 0.1 + rtd * 6;
+    } else {
+      if (p.pos === 'RB' && q.ry == null && markets < 2) return null;
+      const ry = q.ry ?? 0, recy = q.recy ?? 0, rec = q.rec ?? recy / YPC[p.pos];
+      const td = q.atd != null ? tdMean(q.atd) : (ry + recy) / 105 * (impliedTeam / 23);
+      pts = ry * 0.1 + recy * 0.1 + rec + td * 6;
+    }
+    return { pts: pts * SKEW, markets };
+  }
 
   function impliedTotals(lines) {
     const out = {};
@@ -93,7 +155,15 @@
       const base = baseline(p);
       let f = p.pos === 'DST' ? 1 + (LEAGUE_AVG - imp[opp[p.team]]) / LEAGUE_AVG : imp[p.team] / LEAGUE_AVG;
       const mult = 1 + DAMP[p.pos] * (f - 1);
-      return { ...p, base, mult, implied: imp[p.team], oppImplied: imp[opp[p.team]], opp: opp[p.team], proj: base * mult };
+      const model = base * mult;
+      let proj = model, src = 'model';
+      const pp = propPoints(p, imp[p.team]);
+      if (pp) {
+        // Weight props by how many markets the player has (3+ = all props).
+        const w = Math.min(1, pp.markets / 3);
+        proj = w * pp.pts + (1 - w) * model; src = w === 1 ? 'props' : 'blend';
+      }
+      return { ...p, base, mult, model, src, implied: imp[p.team], oppImplied: imp[opp[p.team]], opp: opp[p.team], proj };
     });
     for (const pos in SHRINK) {
       const g = out.filter(p => p.pos === pos), mean = g.reduce((a, p) => a + p.proj, 0) / g.length;
@@ -213,6 +283,6 @@
     });
   }
 
-  const api = { DATA_VERSION, LINES_UPDATED, POS, SLOTS, ROSTER, PLAYERS, DEFAULT_LINES, DEFAULT_OUT, TEAM_NAMES, impliedTotals, project, teamForPick, nextPickFor, liveVBD, advise, stateFrom, simulateSlots, emptyNeeds, byPos };
+  const api = { DATA_VERSION, LINES_UPDATED, PROPS_UPDATED, POS, SLOTS, ROSTER, PLAYERS, DEFAULT_LINES, DEFAULT_OUT, TEAM_NAMES, impliedTotals, project, teamForPick, nextPickFor, liveVBD, advise, stateFrom, simulateSlots, emptyNeeds, byPos };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.VBD = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
