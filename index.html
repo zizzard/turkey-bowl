@@ -232,7 +232,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <h3>How the numbers work</h3>
       <dl class="method">
         <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
-        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Lines as of Nov 25.</dd>
+        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Kicker and D/ST projections are then pulled halfway to their position average, because their week-to-week scoring is mostly noise. Lines as of Nov 25.</dd>
         <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
         <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
         <dt>Draft position</dt><dd>2,000 mock drafts where every team picks by live VBD with some randomness, scored by total projected starting points.</dd>
@@ -242,7 +242,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 
 </div>
 
-<script src="engine.js?v=7399c6e2"></script>
+<script src="engine.js?v=a82bcfb1"></script>
 <script>
 (function () {
   const V = window.VBD;
@@ -464,7 +464,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <ul>
         <li><b>Running back is the scarce position.</b> With Walker out, only six backs project in double digits and every team needs two. Take one in round 1 or 2. Emmett Johnson moves into Walker's role and becomes a solid RB2.</li>
         <li><b>Quarterback goes deep.</b> Allen is the best, but Dak, Caleb, Goff and Mahomes all land close together. Waiting a few rounds costs only a few points.</li>
-        <li><b>Kickers and D/STs:</b> there are exactly ${S.teams === 6 ? 'six of each, one per team' : 'six of each'}. Grab them last unless the cost-of-waiting number on the live board says otherwise. The Bills and Bears D/STs are the best options.</li>
+        <li><b>Kickers and D/STs:</b> there are exactly ${S.teams === 6 ? 'six of each, one per team' : 'six of each'}. The top four of each are close to interchangeable, so take one in rounds 6 to 8, before you're left with the last two. The Bills and Bears D/STs are the best options.</li>
         <li><b>Tight end is flat.</b> LaPorta, Kelce, Loveland and Kincaid project within about one point of each other. Let others reach.</li>
         <li><b>Eagles skill players are discounted.</b> Philly is a ${S.lines[1].spread}-point underdog expected to score ${fmt(V.impliedTotals(S.lines).PHI)}, and Hurts is out for the season.</li>
         <li><b>Chiefs at Bills may be played in rain and wind.</b> The total dropped to ${S.lines[2].total}, which trims Allen, Mahomes and both kickers.</li>

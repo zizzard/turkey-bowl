@@ -8,6 +8,8 @@
   const PRIOR_WEIGHT = 1;
   const LEAGUE_AVG = 23; // average NFL team points per game
   const DAMP = { QB: 0.8, RB: 0.75, WR: 0.75, TE: 0.75, K: 0.6, DST: 1.0 };
+  // K and D/ST scoring is mostly noise game to game: pull projections halfway to the position average.
+  const SHRINK = { K: 0.5, DST: 0.5 };
 
   // Latest Thanksgiving 2026 lines (updated Nov 25)
   const DEFAULT_LINES = [
@@ -87,13 +89,18 @@
 
   function project(lines, overrides) {
     const imp = impliedTotals(lines), opp = opponents(lines);
-    return PLAYERS.map(p => {
+    const out = PLAYERS.map(p => {
       const base = baseline(p);
       let f = p.pos === 'DST' ? 1 + (LEAGUE_AVG - imp[opp[p.team]]) / LEAGUE_AVG : imp[p.team] / LEAGUE_AVG;
       const mult = 1 + DAMP[p.pos] * (f - 1);
-      const proj = overrides && overrides[p.id] != null ? overrides[p.id] : base * mult;
-      return { ...p, base, mult, implied: imp[p.team], oppImplied: imp[opp[p.team]], opp: opp[p.team], proj };
+      return { ...p, base, mult, implied: imp[p.team], oppImplied: imp[opp[p.team]], opp: opp[p.team], proj: base * mult };
     });
+    for (const pos in SHRINK) {
+      const g = out.filter(p => p.pos === pos), mean = g.reduce((a, p) => a + p.proj, 0) / g.length;
+      g.forEach(p => { p.proj = mean + (p.proj - mean) * (1 - SHRINK[pos]); });
+    }
+    if (overrides) out.forEach(p => { if (overrides[p.id] != null) p.proj = overrides[p.id]; });
+    return out;
   }
 
   // Draft order helpers (snake)
