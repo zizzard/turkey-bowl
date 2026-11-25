@@ -83,6 +83,7 @@ tr.rec td { background: var(--accent-soft); }
 tr.full td { opacity: .45; }
 tr.out td { opacity: .4; text-decoration: line-through; }
 .pname { font-weight: 600; }
+.note { font-size: 11px; font-weight: 500; color: var(--gold); margin-left: 4px; }
 .pos { display: inline-block; min-width: 38px; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; color: #fff; }
 .pos.QB { background: var(--qb); } .pos.RB { background: var(--rb); } .pos.WR { background: var(--wr); } .pos.TE { background: var(--te); } .pos.K { background: var(--k); } .pos.DST { background: var(--dst); }
 :root[data-theme="dark"] .pos { color: #0F1513; }
@@ -155,7 +156,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     <div>
       <div class="eyebrow">Thanksgiving 2026 · PPR · 1 QB · 2 RB · 3 WR · TE · K · D/ST</div>
       <h1>Turkey Bowl Draft Board</h1>
-      <div class="sub">Value-based drafting from season PPR averages, scaled by each team's Vegas implied points.</div>
+      <div class="sub">Value-based drafting from season PPR averages, scaled by each team's Vegas implied points. Lines and injuries updated <span id="updated"></span>.</div>
     </div>
   </header>
 
@@ -242,7 +243,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   </section>
 </div>
 
-<script src="engine.js"></script>
+<script src="engine.js?v=2"></script>
 <script>
 (function () {
   const V = window.VBD;
@@ -254,12 +255,16 @@ tr.out td { opacity: .4; text-decoration: line-through; }
     teams: 6, mySlot: -1,
     names: ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8'],
     lines: JSON.parse(JSON.stringify(V.DEFAULT_LINES)),
-    out: V.PLAYERS.filter(p => V.DEFAULT_OUT.includes(p.name)).map(p => p.id),
+    out: V.PLAYERS.filter(p => V.DEFAULT_OUT.includes(p.name)).map(p => p.id), dataVersion: V.DATA_VERSION,
     overrides: {}, picks: [], tab: 'draft', pos: 'ALL', pos2: 'ALL',
   });
   let S = defaults();
   try { const saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) S = Object.assign(S, saved); } catch (e) {}
   S.lines = JSON.parse(JSON.stringify(V.DEFAULT_LINES));
+  if ((S.dataVersion || 1) < V.DATA_VERSION) {
+    const defOut = V.PLAYERS.filter(p => V.DEFAULT_OUT.includes(p.name)).map(p => p.id);
+    S.out = [...new Set([...(S.out || []), ...defOut])]; S.dataVersion = V.DATA_VERSION;
+  }
   if (!['draft', 'cheat', 'slot'].includes(S.tab)) S.tab = 'draft';
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
@@ -269,6 +274,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
   function recompute() { P = V.project(S.lines, S.overrides); }
 
   // ---------- games ----------
+  $('#updated').textContent = V.LINES_UPDATED;
   function renderGames() {
     const imp = V.impliedTotals(S.lines);
     $('#games').innerHTML = S.lines.map((g, i) => `
@@ -315,7 +321,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       const w = v == null ? 0 : Math.max(0, v) / maxV * 60;
       return `<tr class="${p.id === recId ? 'rec' : ''} ${full ? 'full' : ''}">
         <td><span class="pos ${p.pos}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span></td>
-        <td class="pname">${p.name}</td>
+        <td class="pname">${p.name}${p.note ? ` <span class="note">${p.note}</span>` : ''}</td>
         <td class="hide-sm muted">${matchup(p)}</td>
         <td class="r">${fmt(p.proj)}</td>
         <td class="r"><span class="vbdbar ${v != null && v < 0 ? 'neg' : ''}"><i style="width:${w}px"></i>${v == null ? 'filled' : fmt(v)}</span></td>
@@ -396,7 +402,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       html += `<tr class="${out ? 'out' : ''}">
         <td class="r muted">${out ? '' : rank}</td>
         <td><span class="pos ${p.pos}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span></td>
-        <td class="pname">${p.name}</td>
+        <td class="pname">${p.name}${p.note ? ` <span class="note">${p.note}</span>` : ''}</td>
         <td class="muted">${matchup(p)}</td>
         <td class="r">${p.ppg == null ? '–' : fmt(p.ppg)}</td>
         <td class="r muted">${p.games || 0}</td>
@@ -457,11 +463,12 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         return rbs.length > 1 ? `<div class="callout">${rbs[0].name} is the clearest edge on the board: about ${fmt(rbs[0].proj - rbs[1].proj)} pts more than the next running back. Whoever picks first should take him.</div>` : ''; })()}
       <h3>Draft notes for this pool</h3>
       <ul>
-        <li><b>Running back is the scarce position.</b> Only five or six backs project in double digits, and every team needs two. Take one in round 1 or 2.</li>
+        <li><b>Running back is the scarce position.</b> With Walker out, only six backs project in double digits and every team needs two. Take one in round 1 or 2. Emmett Johnson moves into Walker's role and becomes a solid RB2.</li>
         <li><b>Quarterback goes deep.</b> Allen is the best, but Dak, Caleb, Goff and Mahomes all land close together. Waiting a few rounds costs only a few points.</li>
         <li><b>Kickers and D/STs:</b> there are exactly ${S.teams === 6 ? 'six of each, one per team' : 'six of each'}. Grab them last unless the cost-of-waiting number on the live board says otherwise. The Bills and Bears D/STs are the best options.</li>
-        <li><b>Tight end is flat.</b> Kelce, LaPorta, Goedert, Kincaid and Loveland project within about two points of each other. Let others reach.</li>
-        <li><b>Eagles skill players are discounted.</b> Philly is an 8.5-point underdog with a 19.5-point implied total, and Hurts is marked out.</li>
+        <li><b>Tight end is flat.</b> LaPorta, Kelce, Loveland and Kincaid project within about one point of each other. Let others reach.</li>
+        <li><b>Eagles skill players are discounted.</b> Philly is a ${S.lines[1].spread}-point underdog expected to score ${fmt(V.impliedTotals(S.lines).PHI)}, and Hurts is out for the season.</li>
+        <li><b>Chiefs at Bills may be played in rain and wind.</b> The total dropped to ${S.lines[2].total}, which trims Allen, Mahomes and both kickers.</li>
       </ul>`;
   }
 

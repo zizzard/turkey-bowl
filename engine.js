@@ -9,13 +9,15 @@
   const LEAGUE_AVG = 23; // average NFL team points per game
   const DAMP = { QB: 0.8, RB: 0.75, WR: 0.75, TE: 0.75, K: 0.6, DST: 1.0 };
 
-  // Fox Sports lines, Thanksgiving 2026
+  // Latest Thanksgiving 2026 lines (updated Nov 25)
   const DEFAULT_LINES = [
-    { id: 'g1', away: 'CHI', home: 'DET', fav: 'CHI', spread: 2.5, total: 55.5, time: '12:30 PM ET' },
-    { id: 'g2', away: 'PHI', home: 'DAL', fav: 'DAL', spread: 8.5, total: 47.5, time: '4:30 PM ET' },
-    { id: 'g3', away: 'KC', home: 'BUF', fav: 'BUF', spread: 3, total: 50.5, time: '8:15 PM ET' },
+    { id: 'g1', away: 'CHI', home: 'DET', fav: 'CHI', spread: 1.5, total: 55.5, time: '1:00 PM ET' },
+    { id: 'g2', away: 'PHI', home: 'DAL', fav: 'DAL', spread: 9, total: 47.5, time: '4:30 PM ET' },
+    { id: 'g3', away: 'KC', home: 'BUF', fav: 'BUF', spread: 3, total: 46.5, time: '8:15 PM ET' },
   ];
-  DEFAULT_LINES[0].time = '1:00 PM ET';
+  const LINES_UPDATED = 'Nov 25';
+  // Bump when default statuses change so saved boards pick them up.
+  const DATA_VERSION = 2;
 
   const TEAM_NAMES = { CHI: 'Bears', DET: 'Lions', PHI: 'Eagles', DAL: 'Cowboys', KC: 'Chiefs', BUF: 'Bills' };
 
@@ -52,8 +54,15 @@
   ];
 
   const PLAYERS = RAW.map((r, i) => ({ id: i, pos: r[0], name: r[1], team: r[2], games: r[3], ppg: r[4] }));
-  // Default "out": reported done for the season.
-  const DEFAULT_OUT = ['Jalen Hurts'];
+  // Default "out": ruled out for Thanksgiving.
+  const DEFAULT_OUT = ['Jalen Hurts', 'Kenneth Walker III', 'Cole Kmet'];
+  // Role changes: baseline PPR PPG to use instead of the season average.
+  const ROLE_PPG = { 'Emmett Johnson': 15.0 };
+  const NOTES = {
+    'Jalen Hurts': 'Out for season', 'Kenneth Walker III': 'Ruled out', 'Cole Kmet': 'Out for season',
+    'Emmett Johnson': 'Lead back with Walker out', 'Noah Gray': 'Questionable',
+  };
+  PLAYERS.forEach(p => { if (ROLE_PPG[p.name] != null) p.rolePpg = ROLE_PPG[p.name]; if (NOTES[p.name]) p.note = NOTES[p.name]; });
 
   function impliedTotals(lines) {
     const out = {};
@@ -71,6 +80,7 @@
   }
 
   function baseline(p) {
+    if (p.rolePpg != null) return p.rolePpg;
     if (p.ppg == null || !p.games) return PRIOR[p.pos] * 0.35;
     return (p.ppg * p.games + PRIOR[p.pos] * PRIOR_WEIGHT) / (p.games + PRIOR_WEIGHT);
   }
@@ -196,6 +206,6 @@
     });
   }
 
-  const api = { POS, SLOTS, ROSTER, PLAYERS, DEFAULT_LINES, DEFAULT_OUT, TEAM_NAMES, impliedTotals, project, teamForPick, nextPickFor, liveVBD, advise, stateFrom, simulateSlots, emptyNeeds, byPos };
+  const api = { DATA_VERSION, LINES_UPDATED, POS, SLOTS, ROSTER, PLAYERS, DEFAULT_LINES, DEFAULT_OUT, TEAM_NAMES, impliedTotals, project, teamForPick, nextPickFor, liveVBD, advise, stateFrom, simulateSlots, emptyNeeds, byPos };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.VBD = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
