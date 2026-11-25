@@ -234,7 +234,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
       <h3>How the numbers work</h3>
       <dl class="method">
         <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
-        <dt>Player props</dt><dd>Where sportsbooks post player lines, the projection comes from them: passing yards × 0.04, passing TDs × 4 (from the TD over/under odds), rushing and receiving yards × 0.1, receptions × 1, and expected TDs × 6 from anytime-TD odds (after removing the book's cut). Prop lines are medians and fantasy scoring skews high, so these get a 10% bump to put them on the same scale as season averages. Players with three or more markets are marked <b>props</b>; with one or two, the number is a mix of props and the season-average model (<b>½ props</b>). Everyone else uses the model below. Props as of Nov 25.</dd>
+        <dt>Player props</dt><dd>Where sportsbooks post player lines, the projection comes from them: passing yards × 0.04, passing TDs × 4 (from the TD over/under odds), rushing and receiving yards × 0.1, receptions × 1, and expected TDs × 6 from anytime-TD odds (after removing the book's cut). Prop lines are medians and fantasy scoring skews high, so these get a 10% bump to put them on the same scale as season averages. Players with three or more markets are marked <b>props</b>; with one or two, the number is a mix of props and the season-average model (<b>½ props</b>). Most numbers come from <a href="https://www.firstdown.studio/rankings">First Down Studio</a>&rsquo;s prop-based stat lines (yards, receptions, expected TDs), rescored for full PPR; a few depth players use lines pulled from betting previews. Everyone else uses the model below. Props as of Nov 25.</dd>
         <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total. Kicker and D/ST projections are then pulled halfway to their position average, because their week-to-week scoring is mostly noise. Lines as of Nov 25.</dd>
         <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
         <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
@@ -245,7 +245,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
 
 </div>
 
-<script src="engine.js?v=7f722ff2"></script>
+<script src="engine.js?v=ea792e9f"></script>
 <script>
 (function () {
   const V = window.VBD;
@@ -467,7 +467,7 @@ tr.out td { opacity: .4; text-decoration: line-through; }
         return rbs.length > 1 ? `<div class="callout">${rbs[0].name} is the clearest edge on the board: about ${fmt(rbs[0].proj - rbs[1].proj)} pts more than the next running back. Whoever picks first should take him.</div>` : ''; })()}
       <h3>Draft notes for this pool</h3>
       <ul>
-        <li><b>Running back is the scarce position.</b> With Walker out, only seven backs project in double digits and every team needs two. Take one in round 1 or 2. Emmett Johnson moves into Walker&rsquo;s role, and the props have Saquon Barkley as the Eagles&rsquo; lead back, so both are solid RB2s.</li>
+        <li><b>Running back is the scarce position.</b> With Walker out, only six backs project above 13 points and every team needs two. Take one in round 1 or 2. The props make Emmett Johnson a workhorse (about 20 carries) and Saquon Barkley the Eagles&rsquo; lead back. Kyle Monangai is limited coming back from turf toe.</li>
         <li><b>Quarterback goes deep.</b> Allen is the best, but Dak, Caleb, Goff and Mahomes all land close together. Waiting a few rounds costs only a few points.</li>
         <li><b>Kickers and D/STs:</b> there are exactly ${S.teams === 6 ? 'six of each, one per team' : 'six of each'}. The top four of each are close to interchangeable, so take one in rounds 6 to 8, before you're left with the last two. The Bills and Bears D/STs are the best options.</li>
         <li><b>Tight end is flat.</b> LaPorta, Kelce, Loveland and Kincaid project within about one point of each other. Let others reach.</li>

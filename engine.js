@@ -64,7 +64,7 @@
     'Jalen Hurts': 'Out for season', 'Kenneth Walker III': 'Out (some reports say he may play)', 'Cole Kmet': 'Out for season',
     'Emmett Johnson': 'Lead back with Walker out', 'Noah Gray': 'Missed practice (rib)',
     'Jake Ferguson': 'Missed Tue practice', 'Kyle Monangai': 'Working back from turf toe',
-    'Roschon Johnson': 'Missed practice (ankle)',
+    'Roschon Johnson': 'Missed practice (ankle)', 'Dalton Kincaid': 'Questionable',
   };
   PLAYERS.forEach(p => { if (ROLE_PPG[p.name] != null) p.rolePpg = ROLE_PPG[p.name]; if (NOTES[p.name]) p.note = NOTES[p.name]; });
 
@@ -133,6 +133,36 @@
     return { pts: pts * SKEW, markets };
   }
 
+  // First Down Studio prop-driven stat lines (firstdown.studio/rankings, updated Nov 25). These are full
+  // per-stat medians built from player props, so they take priority over the scattered lines above.
+  // QB: [passYds, passTDs, INTs, rushYds, rushTDs]   RB/WR/TE: [rushYds, rec, recYds, TDs]   K: [pts]
+  const FD = {
+    'Josh Allen': [219.5, 1.4, 0.7, 36.5, 0.67], 'Caleb Williams': [261.5, 2.2, 0.8, 22.5, 0.23],
+    'Dak Prescott': [263.5, 2.2, 0.5, 9.5, 0.13], 'Jared Goff': [280.5, 2.2, 0.5, 1.5, 0.07],
+    'Patrick Mahomes': [237.5, 1.6, 0.6, 12.5, 0.16], 'Joe Milton III': [198.5, 1.1, 0.8, 32.5, 0.27],
+    'Jahmyr Gibbs': [92.5, 4.6, 35.5, 1.13], 'Emmett Johnson': [81.5, 3.8, 30.5, 0.81],
+    'CeeDee Lamb': [0, 7.3, 87.5, 0.81], 'Amon-Ra St. Brown': [0, 7.3, 82.5, 0.78],
+    'Javonte Williams': [76.5, 1.9, 7.5, 0.87], 'George Pickens': [0, 5.3, 68.5, 0.66],
+    'James Cook': [82.5, 1.5, 7.5, 0.62], 'Luther Burden III': [0, 5.1, 60.5, 0.49],
+    'Saquon Barkley': [66.5, 1.6, 7.5, 0.57], "D'Andre Swift": [46.5, 2.5, 15.5, 0.69],
+    'DeVonta Smith': [0, 5.6, 63.5, 0.35], 'Colston Loveland': [0, 5.4, 52.5, 0.49],
+    'Jameson Williams': [0, 3.8, 57.5, 0.35], 'Rashee Rice': [0, 4.7, 47.5, 0.34],
+    'Sam LaPorta': [0, 4.4, 44.5, 0.38], 'Rome Odunze': [0, 3.4, 47.5, 0.41],
+    'DJ Moore': [0, 4.0, 48.5, 0.30], 'Travis Kelce': [0, 4.3, 44.5, 0.34],
+    'Khalil Shakir': [0, 3.7, 39.5, 0.25], 'Dalton Kincaid': [0, 3.4, 38.5, 0.27],
+    'Kyle Monangai': [34.5, 1.0, 3.5, 0.44], 'Josh Downs': [0, 3.3, 36.5, 0.26],
+    'Dallas Goedert': [0, 3.5, 30.5, 0.24], 'Ryan Flournoy': [0, 3.1, 29.5, 0.26],
+    'Makai Lemon': [0, 3.2, 29.5, 0.20], 'Kalif Raymond': [0, 2.8, 25.5, 0.22],
+    'Brandon Aubrey': [10.1], 'Cairo Santos': [9.4], 'Jake Bates': [9.0], 'Tyler Bass': [8.4],
+    'Jake Elliott': [7.4], 'Harrison Butker': [6.6],
+  };
+  function fdPoints(p) {
+    const f = FD[p.name]; if (!f) return null;
+    if (p.pos === 'K') return f[0];
+    if (p.pos === 'QB') return (f[0] * 0.04 + f[1] * 4 - f[2] * 2 + f[3] * 0.1 + f[4] * 6) * SKEW;
+    return (f[0] * 0.1 + f[1] + f[2] * 0.1 + f[3] * 6) * SKEW;
+  }
+
   function impliedTotals(lines) {
     const out = {};
     for (const g of lines) {
@@ -162,8 +192,10 @@
       const mult = 1 + DAMP[p.pos] * (f - 1);
       const model = base * mult;
       let proj = model, src = 'model';
-      const pp = propPoints(p, imp[p.team]);
-      if (pp) {
+      const fdp = fdPoints(p);
+      const pp = fdp != null ? null : propPoints(p, imp[p.team]);
+      if (fdp != null) { proj = fdp; src = 'props'; }
+      else if (pp) {
         // Weight props by how many markets the player has (3+ = all props).
         const w = Math.min(1, pp.markets / 3);
         proj = w * pp.pts + (1 - w) * model; src = w === 1 ? 'props' : 'blend';
