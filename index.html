@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Turkey Bowl Draft Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: scoreboard header with the three games, tabbed work area; live draft = board + clock card + rosters */
+:root {
+  --bg: #EEF1EE; --surface: #FFFFFF; --surface-2: #F6F8F6; --ink: #17201C; --muted: #5C6863; --line: #D6DDD8;
+  --accent: #9E1F38; --accent-ink: #FFFFFF; --accent-soft: #F6E3E7; --gold: #A86E0B; --good: #1E7A4F; --bad: #B3362B;
+  --qb: #B3362B; --rb: #1E7A4F; --wr: #2C64A8; --te: #B86A10; --k: #6D4FA8; --dst: #4C5A54;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1513; --surface: #171F1C; --surface-2: #1D2622; --ink: #E7ECE9; --muted: #97A49E; --line: #2B3632;
+  --accent: #E25A75; --accent-ink: #1A0A0E; --accent-soft: #3A1C24; --gold: #E0A94A; --good: #4CC08A; --bad: #EE6E61;
+  --qb: #EE6E61; --rb: #4CC08A; --wr: #6FA5EA; --te: #E9A04A; --k: #A98BE6; --dst: #9AAAA3; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0F1513; --surface: #171F1C; --surface-2: #1D2622; --ink: #E7ECE9; --muted: #97A49E; --line: #2B3632;
+  --accent: #E25A75; --accent-ink: #1A0A0E; --accent-soft: #3A1C24; --gold: #E0A94A; --good: #4CC08A; --bad: #EE6E61;
+  --qb: #EE6E61; --rb: #4CC08A; --wr: #6FA5EA; --te: #E9A04A; --k: #A98BE6; --dst: #9AAAA3; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: 40px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+h2 { font-size: 24px; font-weight: 700; text-transform: uppercase; }
+h3 { font-size: 18px; font-weight: 700; text-transform: uppercase; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; margin-bottom: 16px; }
+.top .sub { margin-top: 6px; color: var(--muted); max-width: 60ch; }
+.games { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.game { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.game .teams { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--display); font-size: 22px; font-weight: 700; text-transform: uppercase; }
+.game .teams .at { color: var(--muted); font-size: 15px; }
+.game .imp { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.game .imp b { color: var(--ink); font-size: 15px; }
+.game .edit { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
+.game .edit select, .game .edit input { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.game .edit input { width: 58px; }
+
+nav.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
+nav.tabs button { background: none; border: 0; padding: 10px 14px; font-family: var(--display); font-size: 17px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+.draft { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.panel-h { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chipbtn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 600; }
+.chipbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.search { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 10px; width: 180px; max-width: 100%; }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+tr.rec td { background: var(--accent-soft); }
+tr.full td { opacity: .45; }
+tr.out td { opacity: .4; text-decoration: line-through; }
+.pname { font-weight: 600; }
+.pos { display: inline-block; min-width: 38px; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; color: #fff; }
+.pos.QB { background: var(--qb); } .pos.RB { background: var(--rb); } .pos.WR { background: var(--wr); } .pos.TE { background: var(--te); } .pos.K { background: var(--k); } .pos.DST { background: var(--dst); }
+:root[data-theme="dark"] .pos { color: #0F1513; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pos { color: #0F1513; } }
+.vbdbar { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.vbdbar i { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); opacity: .75; }
+.vbdbar.neg i { background: var(--muted); }
+.draftbtn { border: 1px solid var(--accent); background: var(--surface); color: var(--accent); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+.draftbtn:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
+.draftbtn:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }
+
+.side { display: grid; gap: 14px; position: sticky; top: max(12px, env(safe-area-inset-top, 0px)); }
+.clock { padding: 16px; display: grid; gap: 12px; }
+.clock .who { font-family: var(--display); font-size: 30px; font-weight: 800; text-transform: uppercase; line-height: 1; }
+.clock .who.you { color: var(--accent); }
+.clock .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.pick-call { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; display: grid; gap: 6px; background: var(--accent-soft); }
+.pick-call .name { font-size: 18px; font-weight: 700; }
+.opts { display: grid; gap: 4px; font-size: 12.5px; }
+.opt { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.opt .later { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--bad); }
+
+.rosters { display: grid; gap: 10px; padding: 12px; }
+.roster { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
+.roster.onclock { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.roster .rh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.roster .rh .tn { font-family: var(--display); font-size: 17px; font-weight: 700; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roster .rh .tot { font-weight: 700; }
+.slotline { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 6px; font-size: 12px; align-items: center; }
+.slotline .empty { color: var(--muted); font-style: italic; }
+.slotline .tag { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+
+.log { padding: 10px 16px 14px; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.log b { color: var(--ink); font-weight: 600; }
+
+.cheat .tier td { background: var(--surface-2); font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 5px 10px; }
+.ovr { width: 62px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 2px 6px; text-align: right; }
+.toggle { border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+.toggle[aria-pressed="true"] { background: var(--bad); border-color: var(--bad); color: #fff; }
+
+.slotgrid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.chart { padding: 16px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.prose { padding: 16px 18px; display: grid; gap: 10px; max-width: 70ch; }
+.prose p { margin: 0; }
+.prose ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.callout { border-left: 3px solid var(--gold); padding: 8px 12px; background: var(--surface-2); border-radius: 0 8px 8px 0; }
+
+.setup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.form { padding: 16px; display: grid; gap: 12px; }
+.form label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.form input, .form select { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 7px 10px; color: var(--ink); font-weight: 500; font-size: 14px; }
+.namegrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.method { font-size: 13px; }
+.method dt { font-weight: 700; margin-top: 8px; }
+.method dd { margin: 2px 0 0; color: var(--muted); }
+
+@media (max-width: 980px) { .draft, .slotgrid, .setup { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
+@media (max-width: 640px) { .games { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 32px; } .namegrid { grid-template-columns: minmax(0, 1fr); } .hide-sm { display: none; } }
+@media (prefers-reduced-motion: no-preference) { .draftbtn, .chipbtn, .btn { transition: background .12s, color .12s; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Thanksgiving 2026 · PPR · 1 QB · 2 RB · 3 WR · TE · K · D/ST</div>
+      <h1>Turkey Bowl Draft Board</h1>
+      <div class="sub">Value-based drafting from season PPR averages, scaled by each team's Vegas implied points. Edit any line and every projection updates.</div>
+    </div>
+    <div class="btnrow"><button class="btn" id="resetLines">Reset lines</button></div>
+  </header>
+
+  <section class="games" id="games" aria-label="Vegas lines"></section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="draft" aria-selected="true">Live draft</button>
+    <button role="tab" data-tab="cheat" aria-selected="false">VBD rankings</button>
+    <button role="tab" data-tab="slot" aria-selected="false">Draft position</button>
+    <button role="tab" data-tab="setup" aria-selected="false">League setup</button>
+  </nav>
+
+  <!-- LIVE DRAFT -->
+  <section id="tab-draft" class="draft">
+    <div class="panel">
+      <div class="panel-h">
+        <h2>Available</h2>
+        <div class="filters" id="posFilter"></div>
+        <input class="search" id="search" type="search" placeholder="Find a player" aria-label="Find a player">
+      </div>
+      <div class="tbl-wrap">
+        <table class="num">
+          <thead><tr><th>Pos</th><th>Player</th><th class="hide-sm">Matchup</th><th class="r">Proj</th><th class="r">Live VBD</th><th></th></tr></thead>
+          <tbody id="availBody"></tbody>
+        </table>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+    <aside class="side">
+      <div class="panel clock" id="clock"></div>
+      <div class="panel"><div class="panel-h"><h3>Rosters</h3><span class="muted" id="draftProgress"></span></div><div class="rosters" id="rosters"></div></div>
+    </aside>
+  </section>
+
+  <!-- CHEAT SHEET -->
+  <section id="tab-cheat" hidden>
+    <div class="panel cheat">
+      <div class="panel-h">
+        <h2>Pre-draft VBD rankings</h2>
+        <div class="filters" id="posFilter2"></div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="num">
+          <thead><tr><th class="r">#</th><th>Pos</th><th>Player</th><th>Matchup</th><th class="r">PPG</th><th class="r">G</th><th class="r">Team pts</th><th class="r">Proj</th><th class="r">VBD</th><th class="r">Your proj</th><th>Status</th></tr></thead>
+          <tbody id="cheatBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- DRAFT SLOT -->
+  <section id="tab-slot" hidden>
+    <div class="slotgrid">
+      <div class="panel">
+        <div class="panel-h"><h2>Projected lineup by draft slot</h2><button class="btn" id="rerun">Re-run 2,000 drafts</button></div>
+        <div class="chart" id="slotChart"></div>
+        <div class="tbl-wrap"><table class="num"><thead><tr><th>Slot</th><th class="r">Avg lineup pts</th><th class="r">vs. avg</th><th>Usual first pick</th><th class="r">Picks</th></tr></thead><tbody id="slotBody"></tbody></table></div>
+      </div>
+      <div class="panel prose" id="slotNotes"></div>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="tab-setup" class="setup" hidden>
+    <div class="panel form">
+      <h3>League</h3>
+      <label>Teams<select id="teamCount"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
+      <label>Highlight this slot as you<select id="mySlot"></select></label>
+      <div class="namegrid" id="names"></div>
+      <div class="btnrow"><button class="btn danger" id="resetDraft">Clear all picks</button></div>
+      <p class="muted" style="margin:0;font-size:12px">Changing the team count clears the draft. Picks and settings are saved in this browser only.</p>
+    </div>
+    <div class="panel form">
+      <h3>How the numbers work</h3>
+      <dl class="method">
+        <dt>Baseline</dt><dd>Season PPR points per game, blended with one game at a modest positional average so one- or two-game samples don't run wild.</dd>
+        <dt>Vegas adjustment</dt><dd>Implied team total = (game total ± spread) ÷ 2. Projection is scaled by implied points ÷ 23 (league average), damped to 75%. D/STs scale the other way, off the opponent's implied total.</dd>
+        <dt>VBD</dt><dd>Projection minus the replacement player: the Nth best still available, where N is the open starting spots left at that position across the league. It recalculates after every pick.</dd>
+        <dt>Pick advice</dt><dd>For the team on the clock, the board simulates everyone else drafting until your next turn and shows how many points each position drops if you wait. The biggest drop is the pick.</dd>
+        <dt>Draft position</dt><dd>2,000 mock drafts where every team picks by live VBD with some randomness, scored by total projected starting points.</dd>
+      </dl>
+    </div>
+  </section>
+</div>
+
+<script src="engine.js"></script>
+<script>
+(function () {
+  const V = window.VBD;
+  const KEY = 'turkeybowl-v1';
+  const $ = s => document.querySelector(s);
+  const fmt = (n, d = 1) => (n == null || isNaN(n)) ? '–' : n.toFixed(d);
+
+  const defaults = () => ({
+    teams: 6, mySlot: 0,
+    names: ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8'],
+    lines: JSON.parse(JSON.stringify(V.DEFAULT_LINES)),
+    out: V.PLAYERS.filter(p => V.DEFAULT_OUT.includes(p.name)).map(p => p.id),
+    overrides: {}, picks: [], tab: 'draft', pos: 'ALL', pos2: 'ALL',
+  });
+  let S = defaults();
+  try { const saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) S = Object.assign(S, saved); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+  let P = [];          // projected players
+  let slotResult = null;
+
+  function recompute() { P = V.project(S.lines, S.overrides); }
+
+  // ---------- games ----------
+  function renderGames() {
+    const imp = V.impliedTotals(S.lines);
+    $('#games').innerHTML = S.lines.map((g, i) => `
+      <div class="game">
+        <div class="teams"><span>${V.TEAM_NAMES[g.away]}</span><span class="at">at</span><span>${V.TEAM_NAMES[g.home]}</span></div>
+        <div class="imp num"><span>${g.away} <b>${fmt(imp[g.away])}</b></span><span class="muted">${g.time}</span><span><b>${fmt(imp[g.home])}</b> ${g.home}</span></div>
+        <div class="edit">
+          <label>Fav <select data-g="${i}" data-f="fav" aria-label="Favorite"><option ${g.fav === g.away ? 'selected' : ''}>${g.away}</option><option ${g.fav === g.home ? 'selected' : ''}>${g.home}</option></select></label>
+          <label>by <input data-g="${i}" data-f="spread" id="sp${i}" type="number" step="0.5" min="0" value="${g.spread}" aria-label="Spread"></label>
+          <label>O/U <input data-g="${i}" data-f="total" id="tot${i}" type="number" step="0.5" min="20" value="${g.total}" aria-label="Total"></label>
+        </div>
+      </div>`).join('');
+  }
+  $('#games').addEventListener('change', e => {
+    const t = e.target; if (!t.dataset.f) return;
+    const g = S.lines[+t.dataset.g];
+    g[t.dataset.f] = t.dataset.f === 'fav' ? t.value : parseFloat(t.value) || 0;
+    slotResult = null; save(); recompute(); renderAll();
+  });
+  $('#resetLines').onclick = () => { S.lines = JSON.parse(JSON.stringify(V.DEFAULT_LINES)); slotResult = null; save(); recompute(); renderAll(); };
+
+  // ---------- tabs ----------
+  document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; save(); renderTabs(); });
+  function renderTabs() {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
+    ['draft', 'cheat', 'slot', 'setup'].forEach(t => $('#tab-' + t).hidden = t !== S.tab);
+    if (S.tab === 'slot' && !slotResult) runSlots();
+  }
+
+  // ---------- filters ----------
+  function renderFilter(el, key) {
+    el.innerHTML = ['ALL', ...V.POS].map(p => `<button class="chipbtn" data-p="${p}" aria-pressed="${S[key] === p}">${p === 'DST' ? 'D/ST' : p}</button>`).join('');
+    el.onclick = e => { const b = e.target.closest('button'); if (!b) return; S[key] = b.dataset.p; save(); renderAll(); };
+  }
+
+  const teamName = t => (S.names[t] || `Team ${t + 1}`) + (t === S.mySlot ? ' (you)' : '');
+  const matchup = p => `${p.team} ${p.pos === 'DST' ? 'vs' : 'vs'} ${p.opp}`;
+
+  // ---------- live draft ----------
+  function renderDraft() {
+    const T = S.teams, total = T * V.ROSTER;
+    const st = V.stateFrom(P, S.picks, T, S.out);
+    const { vbd } = V.liveVBD(st.avail, st.needs);
+    const done = S.picks.length >= total;
+    const onClock = done ? -1 : V.teamForPick(S.picks.length, T);
+    const adv = done ? null : V.advise(P, S.picks, T, S.out);
+    const recId = adv && adv.options[0] ? adv.options[0].now.id : -1;
+    const q = $('#search').value.trim().toLowerCase();
+
+    let rows = st.avail.filter(p => (S.pos === 'ALL' || p.pos === S.pos) && (!q || p.name.toLowerCase().includes(q)));
+    rows.sort((a, b) => ((vbd.get(b.id) ?? -99) - (vbd.get(a.id) ?? -99)) || b.proj - a.proj);
+    const maxV = Math.max(1, ...rows.map(p => vbd.get(p.id) || 0));
+    $('#availBody').innerHTML = rows.map(p => {
+      const v = vbd.get(p.id); const full = !done && st.needs[onClock][p.pos] <= 0;
+      const w = v == null ? 0 : Math.max(0, v) / maxV * 60;
+      return `<tr class="${p.id === recId ? 'rec' : ''} ${full ? 'full' : ''}">
+        <td><span class="pos ${p.pos}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span></td>
+        <td class="pname">${p.name}</td>
+        <td class="hide-sm muted">${matchup(p)}</td>
+        <td class="r">${fmt(p.proj)}</td>
+        <td class="r"><span class="vbdbar ${v != null && v < 0 ? 'neg' : ''}"><i style="width:${w}px"></i>${v == null ? 'filled' : fmt(v)}</span></td>
+        <td class="r"><button class="draftbtn" data-id="${p.id}" ${done || full ? 'disabled' : ''} title="${full ? teamName(onClock) + ' has filled ' + p.pos : 'Draft to ' + teamName(onClock)}">Draft</button></td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="6" class="muted">No players match.</td></tr>`;
+
+    // clock
+    if (done) {
+      $('#clock').innerHTML = `<div class="eyebrow">Draft complete</div><div class="who">All ${total} picks in</div><div class="btnrow"><button class="btn" id="undo">Undo last pick</button></div>`;
+    } else {
+      const rnd = Math.floor(S.picks.length / T) + 1, inR = S.picks.length % T + 1;
+      const best = adv.options[0];
+      const wait = adv.picksUntilNext == null ? 'This is their last pick.' : adv.picksUntilNext === 1 ? 'They pick again right after this.' : `${adv.picksUntilNext - 1} picks until their next turn.`;
+      $('#clock').innerHTML = `
+        <div class="meta num"><span>Round ${rnd}, pick ${inR}</span><span>Overall ${S.picks.length + 1} of ${total}</span></div>
+        <div><div class="eyebrow">On the clock</div><div class="who ${onClock === S.mySlot ? 'you' : ''}">${teamName(onClock)}</div></div>
+        ${best ? `<div class="pick-call">
+          <div class="eyebrow">Best pick</div>
+          <div class="name">${best.now.name} <span class="pos ${best.pos}">${best.pos === 'DST' ? 'D/ST' : best.pos}</span></div>
+          <div class="muted" style="font-size:12.5px">${adv.picksUntilNext == null ? `Take the highest projection left.` : `Waiting at ${best.pos} costs about <b>${fmt(best.dropoff)}</b> pts${best.later ? ` (likely left: ${best.later.name})` : ''}.`} ${wait}</div>
+          <div class="btnrow"><button class="btn primary" data-id="${best.now.id}" id="takeRec">Draft ${best.now.name.split(' ').slice(-1)[0]}</button></div>
+        </div>` : ''}
+        <div class="opts num">
+          <div class="eyebrow">Cost of waiting, by position</div>
+          ${adv.options.map(o => `<div class="opt"><span class="pos ${o.pos}">${o.pos === 'DST' ? 'D/ST' : o.pos}</span><span class="later">${o.now.name}${o.later ? ' → ' + o.later.name : ''}</span><b>${fmt(o.dropoff)}</b></div>`).join('')}
+        </div>
+        <div class="btnrow"><button class="btn" id="undo" ${S.picks.length ? '' : 'disabled'}>Undo last pick</button></div>`;
+    }
+
+    // rosters
+    const order = [...Array(T).keys()];
+    $('#rosters').innerHTML = order.map(t => {
+      const r = st.rosters[t]; const tot = r.reduce((a, p) => a + p.proj, 0);
+      const lines = [];
+      for (const pos of V.POS) {
+        const have = r.filter(p => p.pos === pos);
+        for (let k = 0; k < V.SLOTS[pos]; k++) {
+          const p = have[k];
+          lines.push(`<div class="slotline"><span class="tag">${pos === 'DST' ? 'D/ST' : pos}</span>${p ? `<span>${p.name}</span><span class="num">${fmt(p.proj)}</span>` : `<span class="empty">open</span><span></span>`}</div>`);
+        }
+      }
+      return `<div class="roster ${t === onClock ? 'onclock' : ''}"><div class="rh"><span class="tn">${teamName(t)}</span><span class="tot num">${fmt(tot)}</span></div>${lines.join('')}</div>`;
+    }).join('');
+    $('#draftProgress').textContent = `${S.picks.length}/${total}`;
+
+    $('#log').innerHTML = S.picks.length ? '<span class="eyebrow" style="width:100%">Pick log</span>' + S.picks.map((id, i) => `<span>${i + 1}. <b>${P[id].name}</b> · ${(S.names[V.teamForPick(i, T)] || 'Team ' + (V.teamForPick(i, T) + 1))}</span>`).join('') : '';
+  }
+  function draft(id) {
+    id = +id; const T = S.teams;
+    if (S.picks.includes(id) || S.picks.length >= T * V.ROSTER) return;
+    const st = V.stateFrom(P, S.picks, T, S.out); const t = V.teamForPick(S.picks.length, T);
+    if (st.needs[t][P[id].pos] <= 0) return;
+    S.picks.push(id); save(); renderAll();
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-id]'); if (b && (b.classList.contains('draftbtn') || b.id === 'takeRec')) draft(b.dataset.id);
+    if (e.target.id === 'undo') { S.picks.pop(); save(); renderAll(); }
+  });
+  $('#search').addEventListener('input', renderDraft);
+
+  // ---------- cheat sheet ----------
+  function renderCheat() {
+    const st = V.stateFrom(P, [], S.teams, S.out);
+    const { vbd, rep } = V.liveVBD(st.avail, st.needs);
+    const outSet = new Set(S.out);
+    let rows = P.filter(p => S.pos2 === 'ALL' || p.pos === S.pos2);
+    rows.sort((a, b) => (outSet.has(a.id) - outSet.has(b.id)) || ((vbd.get(b.id) ?? -99) - (vbd.get(a.id) ?? -99)));
+    const tiers = [[10, 'Tier 1 · difference makers'], [5, 'Tier 2 · strong starters'], [2, 'Tier 3 · solid value'], [-Infinity, 'Tier 4 · fill the lineup']];
+    let lastTier = -1, rank = 0, html = '';
+    for (const p of rows) {
+      const out = outSet.has(p.id); const v = vbd.get(p.id);
+      if (!out) {
+        const ti = tiers.findIndex(([min]) => v >= min);
+        if (ti !== lastTier) { html += `<tr class="tier"><td colspan="11">${tiers[ti][1]}</td></tr>`; lastTier = ti; }
+        rank++;
+      } else if (lastTier !== 99) { html += `<tr class="tier"><td colspan="11">Marked out</td></tr>`; lastTier = 99; }
+      html += `<tr class="${out ? 'out' : ''}">
+        <td class="r muted">${out ? '' : rank}</td>
+        <td><span class="pos ${p.pos}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span></td>
+        <td class="pname">${p.name}</td>
+        <td class="muted">${matchup(p)}</td>
+        <td class="r">${p.ppg == null ? '–' : fmt(p.ppg)}</td>
+        <td class="r muted">${p.games || 0}</td>
+        <td class="r muted">${fmt(p.implied)}</td>
+        <td class="r"><b>${fmt(p.proj)}</b></td>
+        <td class="r">${out ? '–' : fmt(v)}</td>
+        <td class="r"><input class="ovr" id="ovr${p.id}" data-ovr="${p.id}" type="number" step="0.1" placeholder="${fmt(p.proj)}" value="${S.overrides[p.id] ?? ''}" aria-label="Override projection for ${p.name}"></td>
+        <td><button class="toggle" data-out="${p.id}" aria-pressed="${out}">${out ? 'Out' : 'Active'}</button></td>
+      </tr>`;
+    }
+    $('#cheatBody').innerHTML = html;
+  }
+  $('#cheatBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-out]'); if (!b) return; const id = +b.dataset.out;
+    S.out = S.out.includes(id) ? S.out.filter(x => x !== id) : [...S.out, id]; slotResult = null; save(); renderAll();
+  });
+  $('#cheatBody').addEventListener('change', e => {
+    const t = e.target; if (!t.dataset.ovr) return; const id = +t.dataset.ovr;
+    if (t.value === '') delete S.overrides[id]; else S.overrides[id] = parseFloat(t.value);
+    slotResult = null; save(); recompute(); renderAll();
+  });
+
+  // ---------- draft slot ----------
+  function runSlots() {
+    $('#slotChart').innerHTML = '<p class="muted">Running mock drafts…</p>';
+    setTimeout(() => { slotResult = V.simulateSlots(P, S.teams, S.out, 2000, 1.5, Math.floor(Math.random() * 1e9)); renderSlots(); }, 30);
+  }
+  $('#rerun').onclick = runSlots;
+  function renderSlots() {
+    if (!slotResult) return;
+    const T = S.teams, r = slotResult;
+    const avg = r.reduce((a, x) => a + x.mean, 0) / r.length;
+    const lo = Math.floor(Math.min(...r.map(x => x.mean)) - 4), hi = Math.ceil(Math.max(...r.map(x => x.mean)) + 2);
+    const W = 560, H = 230, L = 44, B = 30, Tp = 12, bw = (W - L - 10) / T;
+    const y = v => Tp + (H - Tp - B) * (1 - (v - lo) / (hi - lo));
+    const ticks = []; for (let v = Math.ceil(lo / 2) * 2; v <= hi; v += 2) ticks.push(v);
+    const best = r.reduce((a, b) => b.mean > a.mean ? b : a);
+    const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Average projected lineup points by draft slot">
+      ${ticks.map(v => `<line x1="${L}" x2="${W - 10}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`).join('')}
+      <line x1="${L}" x2="${W - 10}" y1="${y(avg)}" y2="${y(avg)}" stroke="var(--gold)" stroke-dasharray="4 4" stroke-width="1.5"/>
+      <text x="${W - 12}" y="${y(avg) - 5}" text-anchor="end" font-size="11" fill="var(--gold)">league avg ${fmt(avg)}</text>
+      ${r.map((x, i) => { const bx = L + i * bw + bw * 0.18, w = bw * 0.64; const top = y(x.mean);
+        return `<rect x="${bx}" y="${top}" width="${w}" height="${y(lo) - top}" rx="4" fill="${x === best ? 'var(--accent)' : 'var(--muted)'}" opacity="${x === best ? 1 : .55}"/>
+        <text x="${bx + w / 2}" y="${top - 5}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${fmt(x.mean)}</text>
+        <text x="${bx + w / 2}" y="${H - 10}" text-anchor="middle" font-size="12" fill="var(--muted)">Pick ${x.slot}</text>`; }).join('')}
+    </svg>`;
+    $('#slotChart').innerHTML = svg;
+    const picksFor = t => { const a = []; for (let i = 0; i < T * V.ROSTER; i++) if (V.teamForPick(i, T) === t) a.push(i + 1); return a.join(', '); };
+    $('#slotBody').innerHTML = [...r].sort((a, b) => b.mean - a.mean).map(x => `<tr ${x === best ? 'class="rec"' : ''}><td><b>Pick ${x.slot}</b></td><td class="r">${fmt(x.mean)}</td><td class="r">${(x.mean - avg >= 0 ? '+' : '') + fmt(x.mean - avg)}</td><td>${x.topFirst} <span class="muted">(${Math.round(x.topFirstPct * 100)}%)</span></td><td class="r muted">${picksFor(x.slot - 1)}</td></tr>`).join('');
+
+    const ranked = [...r].sort((a, b) => b.mean - a.mean);
+    const top2 = P.filter(p => !S.out.includes(p.id)).sort((a, b) => b.proj - a.proj).slice(0, 2);
+    $('#slotNotes').innerHTML = `
+      <h3>Where to sit</h3>
+      <p><b>Pick ${ranked[0].slot}</b> projects best (${fmt(ranked[0].mean)} pts), then pick ${ranked[1].slot} and pick ${ranked[2].slot}. The worst seat is pick ${ranked[ranked.length - 1].slot}, about ${fmt(ranked[0].mean - ranked[ranked.length - 1].mean)} pts behind the best.</p>
+      <p>The gap is small. Each simulated draft has a spread of about ±${fmt(r[0].sd)} pts, so a good draft from any seat beats a lazy one from pick 1.</p>
+      ${(() => { const rbs = P.filter(p => p.pos === 'RB' && !S.out.includes(p.id)).sort((a, b) => b.proj - a.proj);
+        return rbs.length > 1 ? `<div class="callout">${rbs[0].name} is the clearest edge on the board: about ${fmt(rbs[0].proj - rbs[1].proj)} pts more than the next running back. Whoever picks first should take him.</div>` : ''; })()}
+      <h3>Draft notes for this pool</h3>
+      <ul>
+        <li><b>Running back is the scarce position.</b> Only five or six backs project in double digits, and every team needs two. Take one in round 1 or 2.</li>
+        <li><b>Quarterback goes deep.</b> Allen is the best, but Dak, Caleb, Goff and Mahomes all land close together. Waiting a few rounds costs only a few points.</li>
+        <li><b>Kickers and D/STs:</b> there are exactly ${S.teams === 6 ? 'six of each, one per team' : 'six of each'}. Grab them last unless the cost-of-waiting number on the live board says otherwise. The Bills and Bears D/STs are the best options.</li>
+        <li><b>Tight end is flat.</b> Kelce, LaPorta, Goedert, Kincaid and Loveland project within about two points of each other. Let others reach.</li>
+        <li><b>Eagles skill players are discounted.</b> Philly is an 8.5-point underdog with a 19.5-point implied total, and Hurts is marked out.</li>
+      </ul>`;
+  }
+
+  // ---------- setup ----------
+  function renderSetup() {
+    $('#teamCount').value = S.teams;
+    $('#mySlot').innerHTML = [...Array(S.teams).keys()].map(t => `<option value="${t}" ${t === S.mySlot ? 'selected' : ''}>Pick ${t + 1} · ${S.names[t]}</option>`).join('');
+    $('#names').innerHTML = [...Array(S.teams).keys()].map(t => `<label>Pick ${t + 1}<input id="name${t}" data-name="${t}" value="${S.names[t].replace(/"/g, '&quot;')}"></label>`).join('');
+  }
+  $('#teamCount').onchange = e => { S.teams = +e.target.value; S.picks = []; if (S.mySlot >= S.teams) S.mySlot = 0; slotResult = null; save(); renderAll(); };
+  $('#mySlot').onchange = e => { S.mySlot = +e.target.value; save(); renderAll(); };
+  $('#names').addEventListener('change', e => { const t = e.target.dataset.name; if (t == null) return; S.names[+t] = e.target.value || `Team ${+t + 1}`; save(); renderAll(); });
+  let armed = false;
+  $('#resetDraft').onclick = e => {
+    if (!armed) { armed = true; e.target.textContent = 'Click again to clear'; setTimeout(() => { armed = false; e.target.textContent = 'Clear all picks'; }, 3000); return; }
+    armed = false; S.picks = []; save(); e.target.textContent = 'Picks cleared'; renderAll();
+  };
+
+  function renderAll() {
+    renderGames(); renderFilter($('#posFilter'), 'pos'); renderFilter($('#posFilter2'), 'pos2');
+    renderDraft(); renderCheat(); renderSetup(); renderTabs(); if (slotResult) renderSlots();
+  }
+  recompute(); renderAll();
+})();
+</script>
+</body>
+</html>
