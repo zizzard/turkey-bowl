@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turkey Bowl Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF1EE; --surface: #FFFFFF; --surface-2: #F6F8F6; --ink: #17201C; --muted: #5C6863; --line: #D6DDD8;
+  --accent: #9E1F38; --accent-soft: #F6E3E7; --gold: #A86E0B; --good: #1E7A4F; --bad: #B3362B; --live: #C0392B;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1513; --surface: #171F1C; --surface-2: #1D2622; --ink: #E7ECE9; --muted: #97A49E; --line: #2B3632;
+    --accent: #E25A75; --accent-soft: #3A1C24; --gold: #E0A94A; --good: #4CC08A; --bad: #EE6E61; --live: #FF6B5E;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+header { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 34px/1 'Barlow Condensed', sans-serif; margin: 4px 0 0; letter-spacing: .01em; }
+.updated { font-size: 12px; color: var(--muted); }
+.updated button { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; margin-left: 6px; cursor: pointer; text-decoration: underline; }
+.games { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.game { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.game .row { display: flex; justify-content: space-between; font: 700 18px/1.25 'Barlow Condensed', sans-serif; }
+.game .row.lose { color: var(--muted); }
+.game .st { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.game .st.in { color: var(--live); font-weight: 600; }
+.standings { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.team { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.team-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid var(--line); }
+.rank { font: 700 20px/1 'Barlow Condensed', sans-serif; color: var(--muted); width: 22px; }
+.team:first-child .rank { color: var(--gold); }
+.tname { font: 700 22px/1 'Barlow Condensed', sans-serif; flex: 1; }
+.tot { text-align: right; }
+.tot b { font: 700 28px/1 'Barlow Condensed', sans-serif; display: block; font-variant-numeric: tabular-nums; }
+.tot span { font-size: 11px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 6px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.pos { width: 46px; font-size: 11px; font-weight: 600; color: var(--muted); padding-right: 0; padding-top: 8px; }
+td.pl .n { font-weight: 500; }
+td.pl .s { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+td.pl .s .in { color: var(--live); font-weight: 600; }
+td.pts { text-align: right; width: 70px; font-variant-numeric: tabular-nums; }
+td.pts b { font-weight: 600; font-size: 15px; }
+td.pts .pj { display: block; font-size: 11px; color: var(--muted); }
+tr.pre td.pts b { color: var(--muted); font-weight: 500; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--live); margin-right: 5px; vertical-align: 1px; animation: pulse 1.6s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.foot { margin-top: 18px; font-size: 12px; color: var(--muted); max-width: 760px; }
+.err { background: var(--accent-soft); color: var(--accent); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+@media (max-width: 760px) {
+  .standings { grid-template-columns: 1fr; }
+  .games { grid-template-columns: 1fr; gap: 8px; }
+  .game { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .game .teams { flex: 1; }
+  .game .st { margin: 0; text-align: right; max-width: 45%; }
+  h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Thanksgiving 2026 · PPR</div>
+      <h1>Turkey Bowl Scoreboard</h1>
+    </div>
+    <div class="updated" id="updated">Loading…</div>
+  </header>
+  <div id="err"></div>
+  <div class="games" id="games"></div>
+  <div class="standings" id="standings"></div>
+  <p class="foot">Live stats from ESPN, refreshed every 30 seconds, scored with ESPN standard PPR. Gray numbers are pre-game projections; "proj" is points so far plus the rest of each player's projection for the time left in their game. D/ST points-allowed uses the opponent's full score.</p>
+</div>
+<script>
+(function () {
+  // [pos, name, team, projection]
+  const TEAMS = [
+    { name: 'The Kettles', roster: [
+      ['QB', 'Josh Allen', 'BUF', 22.7], ['RB', 'Ty Johnson', 'BUF', 6.2], ['RB', 'Elijah Mitchell', 'PHI', 5.7],
+      ['WR', 'DJ Moore', 'BUF', 11.7], ['WR', 'Keon Coleman', 'BUF', 8.4], ['WR', 'Isaac TeSlaa', 'DET', 6.0],
+      ['TE', 'Dalton Kincaid', 'BUF', 9.8], ['K', 'Tyler Bass', 'BUF', 8.4], ['DST', 'Eagles D/ST', 'PHI', 3.8]] },
+    { name: 'The Socs', roster: [
+      ['QB', 'Dak Prescott', 'DAL', 22.1], ['RB', 'Kyle Monangai', 'CHI', 8.2], ['RB', 'Will Shipley', 'PHI', 3.8],
+      ['WR', 'CeeDee Lamb', 'DAL', 23.0], ['WR', 'DeVonta Smith', 'PHI', 15.5], ['WR', 'Xavier Worthy', 'KC', 7.0],
+      ['TE', 'Sam LaPorta', 'DET', 12.2], ['K', 'Brandon Aubrey', 'DAL', 9.3], ['DST', 'Lions D/ST', 'DET', 4.9]] },
+    { name: 'The Claws', roster: [
+      ['QB', 'Jared Goff', 'DET', 21.5], ['RB', 'Jahmyr Gibbs', 'DET', 26.6], ['RB', "D'Andre Swift", 'CHI', 14.1],
+      ['WR', 'Luther Burden III', 'CHI', 15.5], ['WR', 'Ryan Flournoy', 'DAL', 8.4], ['WR', 'Makai Lemon', 'PHI', 8.1],
+      ['TE', 'Dallas Goedert', 'PHI', 8.8], ['K', 'Jake Elliott', 'PHI', 7.9], ['DST', 'Cowboys D/ST', 'DAL', 4.6]] },
+    { name: 'The Turkeys', roster: [
+      ['QB', 'Joe Milton III', 'PHI', 17.2], ['RB', 'James Cook', 'BUF', 15.6], ['RB', 'Dameon Pierce', 'PHI', 7.9],
+      ['WR', 'Amon-Ra St. Brown', 'DET', 22.3], ['WR', 'Jameson Williams', 'DET', 12.8], ['WR', 'Rashee Rice', 'KC', 12.6],
+      ['TE', 'Brevyn Spann-Ford', 'DAL', 4.6], ['K', 'Harrison Butker', 'KC', 7.5], ['DST', 'Bears D/ST', 'CHI', 5.7]] },
+    { name: 'The Mavericks', roster: [
+      ['QB', 'Patrick Mahomes', 'KC', 18.6], ['RB', 'Emmett Johnson', 'KC', 21.8], ['RB', 'Saquon Barkley', 'PHI', 13.7],
+      ['WR', 'George Pickens', 'DAL', 17.7], ['WR', 'Khalil Shakir', 'BUF', 10.1], ['WR', 'Kalif Raymond', 'CHI', 7.3],
+      ['TE', 'Colston Loveland', 'CHI', 14.9], ['K', 'Cairo Santos', 'CHI', 8.9], ['DST', 'Bills D/ST', 'BUF', 6.1]] },
+    { name: 'The Dragons', roster: [
+      ['QB', 'Caleb Williams', 'CHI', 23.4], ['RB', 'Javonte Williams', 'DAL', 17.1], ['RB', 'Jashaun Corbin', 'DAL', null],
+      ['WR', 'Rome Odunze', 'CHI', 11.7], ['WR', 'Josh Downs', 'KC', 9.4], ['WR', 'Darius Cooper', 'PHI', 6.5],
+      ['TE', 'Travis Kelce', 'KC', 11.9], ['K', 'Jake Bates', 'DET', 8.7], ['DST', 'Chiefs D/ST', 'KC', 5.8]] },
+  ];
+  const DATE = '20261126';
+  const API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+  const $ = s => document.querySelector(s);
+  const norm = n => n.toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b\.?/g, '').replace(/[^a-z]/g, '');
+  const f1 = n => (Math.round(n * 10) / 10).toFixed(1);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let games = {};      // team abbr -> game info
+  const summaries = {}; // event id -> parsed stats
+  const finalDone = new Set();
+
+  function parseSummary(d) {
+    const ply = {}, kick = {}, team = {};
+    const P = name => (ply[norm(name)] ||= { py: 0, ptd: 0, int: 0, ry: 0, rtd: 0, rec: 0, recy: 0, rectd: 0, fl: 0, two: 0, comp: '', att: 0 });
+    for (const t of d.boxscore?.players || []) {
+      const ab = t.team.abbreviation;
+      team[ab] ||= { retTD: 0, safety: 0 };
+      for (const c of t.statistics) {
+        const k = c.keys || [];
+        for (const a of c.athletes || []) {
+          const v = key => { const i = k.indexOf(key); return i < 0 ? 0 : parseFloat(a.stats[i]) || 0; };
+          const raw = key => { const i = k.indexOf(key); return i < 0 ? '' : a.stats[i]; };
+          const nm = a.athlete.displayName;
+          if (c.name === 'passing') { const p = P(nm); p.py += v('passingYards'); p.ptd += v('passingTouchdowns'); p.int += v('interceptions'); p.comp = raw('completions/passingAttempts'); }
+          if (c.name === 'rushing') { const p = P(nm); p.ry += v('rushingYards'); p.rtd += v('rushingTouchdowns'); p.att += v('rushingAttempts'); }
+          if (c.name === 'receiving') { const p = P(nm); p.rec += v('receptions'); p.recy += v('receivingYards'); p.rectd += v('receivingTouchdowns'); }
+          if (c.name === 'fumbles') P(nm).fl += v('fumblesLost');
+          if (c.name === 'kickReturns') team[ab].retTD += v('kickReturnTouchdowns');
+          if (c.name === 'puntReturns') team[ab].retTD += v('puntReturnTouchdowns');
+          if (c.name === 'kicking') {
+            const [m, at] = (raw('fieldGoalsMade/fieldGoalAttempts') || '0/0').split('/').map(Number);
+            const [xm] = (raw('extraPointsMade/extraPointAttempts') || '0/0').split('/').map(Number);
+            kick[norm(nm)] = { fgm: m, fga: at, xpm: xm, dists: [] };
+          }
+        }
+      }
+    }
+    for (const t of d.boxscore?.teams || []) {
+      const ab = t.team.abbreviation, s = {};
+      for (const x of t.statistics) if (!(x.name in s)) s[x.name] = x.displayValue;
+      team[ab] = Object.assign(team[ab] || { retTD: 0, safety: 0 }, {
+        yards: parseFloat(s.totalYards) || 0, intThrown: parseFloat(s.interceptions) || 0,
+        sacked: parseFloat(String(s.sacksYardsLost || '0').split('-')[0]) || 0,
+        fumLost: parseFloat(s.fumblesLost) || 0, defTD: parseFloat(s.defensiveTouchdowns) || 0,
+      });
+    }
+    for (const sp of d.scoringPlays || []) {
+      const txt = sp.text || '';
+      const fg = txt.match(/^(.+?) (\d+) Yd Field Goal/);
+      if (fg && /Field Goal Good/i.test(sp.type?.text || 'Field Goal Good')) { const k = kick[norm(fg[1])]; if (k) k.dists.push(+fg[2]); }
+      const pass2 = txt.match(/\(([^()]+?) Pass to ([^()]+?) for Two-Point Conversion\)/i);
+      if (pass2) { P(pass2[1]).two++; P(pass2[2]).two++; }
+      const run2 = txt.match(/\(([^()]+?) (?:Run|Rush) for Two-Point Conversion\)/i);
+      if (run2) P(run2[1]).two++;
+      if (/safety/i.test(sp.type?.text || '') && sp.team?.abbreviation) { const ab = sp.team.abbreviation; (team[ab] ||= { retTD: 0, safety: 0 }).safety++; }
+    }
+    return { ply, kick, team };
+  }
+
+  function playerPts(s) {
+    return s.py * 0.04 + s.ptd * 4 - s.int * 2 + s.ry * 0.1 + s.rtd * 6 + s.rec + s.recy * 0.1 + s.rectd * 6 - s.fl * 2 + s.two * 2;
+  }
+  function kickPts(k) {
+    let pts = k.xpm - (k.fga - k.fgm);
+    k.dists.forEach(d => { pts += d >= 50 ? 5 : d >= 40 ? 4 : 3; });
+    pts += 3 * Math.max(0, k.fgm - k.dists.length); // distance not posted yet
+    return pts;
+  }
+  function dstPts(ab, opp, sum, oppScore) {
+    const o = sum.team[opp] || {}, me = sum.team[ab] || {};
+    let p = (o.sacked || 0) + 2 * (o.intThrown || 0) + 2 * (o.fumLost || 0) + 6 * ((me.defTD || 0) + (me.retTD || 0)) + 2 * (me.safety || 0);
+    const pa = oppScore;
+    p += pa === 0 ? 5 : pa <= 6 ? 4 : pa <= 13 ? 3 : pa <= 17 ? 1 : pa <= 21 ? 0 : pa <= 27 ? -1 : pa <= 34 ? -3 : -5;
+    const ya = o.yards || 0;
+    p += ya < 100 ? 5 : ya < 200 ? 3 : ya < 300 ? 2 : ya < 350 ? 0 : ya < 400 ? -1 : ya < 450 ? -3 : ya < 500 ? -5 : ya < 550 ? -6 : -7;
+    return { pts: p, line: `${pa} PA · ${ya} yds${o.sacked ? ` · ${o.sacked} sk` : ''}${o.intThrown ? ` · ${o.intThrown} INT` : ''}${o.fumLost ? ` · ${o.fumLost} FR` : ''}${(me.defTD || 0) + (me.retTD || 0) ? ` · ${(me.defTD || 0) + (me.retTD || 0)} TD` : ''}` };
+  }
+  function statLine(pos, s) {
+    const b = [];
+    if (s.comp) b.push(`${s.comp}, ${s.py} yd${s.ptd ? `, ${s.ptd} TD` : ''}${s.int ? `, ${s.int} INT` : ''}`);
+    if (s.att || s.ry) b.push(`${s.att} car ${s.ry} yd${s.rtd ? `, ${s.rtd} TD` : ''}`);
+    if (s.rec || s.recy || s.rectd) b.push(`${s.rec} rec ${s.recy} yd${s.rectd ? `, ${s.rectd} TD` : ''}`);
+    if (s.two) b.push(`${s.two} 2PT`);
+    if (s.fl) b.push(`${s.fl} fum lost`);
+    return b.join(' · ');
+  }
+
+  function score() {
+    return TEAMS.map(T => {
+      let total = 0, proj = 0;
+      const rows = T.roster.map(([pos, name, ab, pj]) => {
+        const g = games[ab]; const sum = g && summaries[g.id];
+        let pts = 0, line = '', state = g ? g.state : 'pre';
+        if (sum && state !== 'pre') {
+          if (pos === 'DST') { const r = dstPts(ab, g.opp[ab], sum, g.score[g.opp[ab]]); pts = r.pts; line = r.line; }
+          else if (pos === 'K') { const k = sum.kick[norm(name)]; if (k) { pts = kickPts(k); line = `${k.fgm}/${k.fga} FG${k.dists.length ? ` (${k.dists.join(', ')})` : ''} · ${k.xpm} XP`; } }
+          else { const s = sum.ply[norm(name)]; if (s) { pts = playerPts(s); line = statLine(pos, s); } }
+        }
+        const left = state === 'post' ? 0 : state === 'pre' ? 1 : 1 - (g ? g.frac : 0);
+        const live = state === 'pre' ? (pj || 0) : pts + (pj || 0) * left;
+        if (state !== 'pre') total += pts;
+        proj += live;
+        return { pos, name, ab, pj, pts, line, state, g };
+      });
+      return { name: T.name, total, proj, rows };
+    }).sort((a, b) => b.total - a.total || b.proj - a.proj);
+  }
+
+  function gameTag(g) {
+    if (!g) return '';
+    if (g.state === 'in') return `<span class="in"><span class="dot"></span>${esc(g.detail)}</span>`;
+    if (g.state === 'post') return esc(g.detail);
+    return esc(g.kick);
+  }
+
+  function render() {
+    const seen = new Set();
+    $('#games').innerHTML = Object.values(games).filter(g => !seen.has(g.id) && seen.add(g.id)).sort((a, b) => a.date - b.date).map(g => {
+      const [a, h] = g.teams; const sa = g.score[a], sh = g.score[h];
+      const lose = t => g.state !== 'pre' && g.score[t] < Math.max(sa, sh) ? 'lose' : '';
+      return `<div class="game"><div class="teams"><div class="row ${lose(a)}"><span>${a}</span><span>${g.state === 'pre' ? '' : sa}</span></div>
+        <div class="row ${lose(h)}"><span>@ ${h}</span><span>${g.state === 'pre' ? '' : sh}</span></div></div>
+        <div class="st ${g.state === 'in' ? 'in' : ''}">${g.state === 'in' ? '<span class="dot"></span>' : ''}${esc(g.state === 'pre' ? g.kick : g.detail)}</div></div>`;
+    }).join('');
+    $('#standings').innerHTML = score().map((t, i) => `
+      <section class="team">
+        <div class="team-h"><span class="rank">${i + 1}</span><span class="tname">${esc(t.name)}</span>
+          <div class="tot"><b>${f1(t.total)}</b><span>proj ${f1(t.proj)}</span></div></div>
+        <table>${t.rows.map(r => `<tr class="${r.state}">
+          <td class="pos">${r.pos === 'DST' ? 'D/ST' : r.pos}</td>
+          <td class="pl"><div class="n">${esc(r.name)}</div><div class="s">${r.ab} · ${r.line ? esc(r.line) + ' · ' : ''}${gameTag(r.g)}</div></td>
+          <td class="pts">${r.state === 'pre' ? `<b>${r.pj == null ? '–' : f1(r.pj)}</b>` : `<b>${f1(r.pts)}</b>${r.state === 'in' && r.pj != null ? `<span class="pj">proj ${f1(r.pj)}</span>` : ''}`}</td>
+        </tr>`).join('')}</table>
+      </section>`).join('');
+  }
+
+  async function refresh() {
+    try {
+      const sb = await (await fetch(`${API}/scoreboard?dates=${DATE}`, { cache: 'no-store' })).json();
+      const next = {};
+      for (const e of sb.events || []) {
+        const c = e.competitions[0], st = c.status;
+        const byHA = {}; c.competitors.forEach(x => { byHA[x.homeAway] = x; });
+        const a = byHA.away.team.abbreviation, h = byHA.home.team.abbreviation;
+        const clock = st.displayClock || '0:00'; const [mm, ss] = clock.split(':').map(Number);
+        const per = st.period || 0;
+        const frac = st.type.state === 'post' ? 1 : per > 4 ? 1 : Math.min(1, Math.max(0, ((per - 1) * 15 + (15 - (mm + (ss || 0) / 60))) / 60));
+        const kick = new Date(e.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const g = { id: e.id, date: new Date(e.date), teams: [a, h], score: { [a]: +byHA.away.score || 0, [h]: +byHA.home.score || 0 },
+          opp: { [a]: h, [h]: a }, state: st.type.state, detail: st.type.shortDetail, frac, kick };
+        next[a] = g; next[h] = g;
+      }
+      games = next;
+      const need = [...new Set(Object.values(games).filter(g => g.state !== 'pre' && !finalDone.has(g.id)).map(g => g.id))];
+      await Promise.all(need.map(async id => {
+        const d = await (await fetch(`${API}/summary?event=${id}`, { cache: 'no-store' })).json();
+        summaries[id] = parseSummary(d);
+        if (Object.values(games).find(g => g.id === id)?.state === 'post') finalDone.add(id);
+      }));
+      $('#err').innerHTML = '';
+      render();
+      $('#updated').innerHTML = `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}<button id="rf">Refresh</button>`;
+      $('#rf').onclick = refresh;
+    } catch (e) {
+      $('#err').innerHTML = `<div class="err">Couldn't reach ESPN (${esc(e.message)}). Retrying in 30 seconds.</div>`;
+    }
+  }
+  refresh();
+  setInterval(refresh, 30000);
+})();
+</script>
+</body>
+</html>
