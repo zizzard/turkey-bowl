@@ -36,7 +36,9 @@ h1 { font: 700 34px/1 'Barlow Condensed', sans-serif; margin: 4px 0 0; letter-sp
 .team { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .team-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid var(--line); }
 .rank { font: 700 20px/1 'Barlow Condensed', sans-serif; color: var(--muted); width: 22px; }
-.team:first-child .rank { color: var(--gold); }
+.team.mine { border: 2px solid var(--accent); }
+.team.mine .team-h { background: var(--accent-soft); }
+.team.mine .tname::after { content: 'Our team'; font: 600 11px/1 Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-left: 10px; vertical-align: 4px; }
 .tname { font: 700 22px/1 'Barlow Condensed', sans-serif; flex: 1; }
 .tot { text-align: right; }
 .tot b { font: 700 28px/1 'Barlow Condensed', sans-serif; display: block; font-variant-numeric: tabular-nums; }
@@ -109,6 +111,7 @@ tr.pre td.pts b { color: var(--muted); font-weight: 500; }
       ['WR', 'Rome Odunze', 'CHI', 11.7], ['WR', 'Josh Downs', 'KC', 9.4], ['WR', 'Darius Cooper', 'PHI', 6.5],
       ['TE', 'Travis Kelce', 'KC', 11.9], ['K', 'Jake Bates', 'DET', 8.7], ['DST', 'Chiefs D/ST', 'KC', 5.8]] },
   ];
+  const MINE = 'The Mavericks';
   const DATE = '20261126';
   const API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
   const $ = s => document.querySelector(s);
@@ -234,9 +237,12 @@ tr.pre td.pts b { color: var(--muted); font-weight: 500; }
         <div class="row ${lose(h)}"><span>@ ${h}</span><span>${g.state === 'pre' ? '' : sh}</span></div></div>
         <div class="st ${g.state === 'in' ? 'in' : ''}">${g.state === 'in' ? '<span class="dot"></span>' : ''}${esc(g.state === 'pre' ? g.kick : g.detail)}</div></div>`;
     }).join('');
-    $('#standings').innerHTML = score().map((t, i) => `
-      <section class="team">
-        <div class="team-h"><span class="rank">${i + 1}</span><span class="tname">${esc(t.name)}</span>
+    // Our team is pinned first; the rank number still shows its real place.
+    const ranked = score().map((t, i) => ({ ...t, rank: i + 1 }));
+    ranked.sort((a, b) => (b.name === MINE) - (a.name === MINE));
+    $('#standings').innerHTML = ranked.map(t => `
+      <section class="team ${t.name === MINE ? 'mine' : ''}">
+        <div class="team-h"><span class="rank">${t.rank}</span><span class="tname">${esc(t.name)}</span>
           <div class="tot"><b>${f1(t.total)}</b><span>proj ${f1(t.proj)}</span></div></div>
         <table>${t.rows.map(r => `<tr class="${r.state}">
           <td class="pos">${r.pos === 'DST' ? 'D/ST' : r.pos}</td>
