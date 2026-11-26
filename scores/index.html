@@ -208,7 +208,8 @@ tr.pre td.pts b { color: var(--muted); font-weight: 500; }
           else { const s = sum.ply[norm(name)]; if (s) { pts = playerPts(s); line = statLine(pos, s); } }
         }
         const left = state === 'post' ? 0 : state === 'pre' ? 1 : 1 - (g ? g.frac : 0);
-        const live = state === 'pre' ? (pj || 0) : pts + (pj || 0) * left;
+        // D/ST points-allowed and yards bonuses start high and fall, so blend toward its projection instead of adding.
+        const live = state === 'pre' ? (pj || 0) : pos === 'DST' ? pts * (1 - left) + (pj || 0) * left : pts + (pj || 0) * left;
         if (state !== 'pre') total += pts;
         proj += live;
         return { pos, name, ab, pj, pts, line, state, g };
