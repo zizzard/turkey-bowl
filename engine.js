@@ -19,7 +19,7 @@
   ];
   const LINES_UPDATED = 'Nov 25';
   // Bump when default statuses change so saved boards pick them up.
-  const DATA_VERSION = 2;
+  const DATA_VERSION = 3;
 
   const TEAM_NAMES = { CHI: 'Bears', DET: 'Lions', PHI: 'Eagles', DAL: 'Cowboys', KC: 'Chiefs', BUF: 'Bills' };
 
@@ -57,11 +57,11 @@
 
   const PLAYERS = RAW.map((r, i) => ({ id: i, pos: r[0], name: r[1], team: r[2], games: r[3], ppg: r[4] }));
   // Default "out": ruled out for Thanksgiving.
-  const DEFAULT_OUT = ['Jalen Hurts', 'Kenneth Walker III', 'Cole Kmet'];
+  const DEFAULT_OUT = ['Jalen Hurts', 'Kenneth Walker III', 'Cole Kmet', 'Tyquan Thornton'];
   // Role changes: baseline PPR PPG to use instead of the season average.
   const ROLE_PPG = { 'Emmett Johnson': 15.0 };
   const NOTES = {
-    'Jalen Hurts': 'Out for season', 'Kenneth Walker III': 'Out (some reports say he may play)', 'Cole Kmet': 'Out for season',
+    'Jalen Hurts': 'Out for season', 'Kenneth Walker III': 'Out (some reports say he may play)', 'Cole Kmet': 'Out for season', 'Tyquan Thornton': 'On IR',
     'Emmett Johnson': 'Lead back with Walker out', 'Noah Gray': 'Missed practice (rib)',
     'Jake Ferguson': 'Missed Tue practice', 'Kyle Monangai': 'Working back from turf toe',
     'Roschon Johnson': 'Missed practice (ankle)', 'Dalton Kincaid': 'Questionable',
